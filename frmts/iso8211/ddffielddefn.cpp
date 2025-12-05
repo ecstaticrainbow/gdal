@@ -479,8 +479,10 @@ void DDFFieldDefn::BuildSubfields()
     /*      We accomplish this by ignoring everything before the last       */
     /*      '*' in the subfield list.                                       */
     /* -------------------------------------------------------------------- */
-    if (strrchr(pszSublist, '*') != nullptr)
-        pszSublist = strrchr(pszSublist, '*');
+
+    // TODO: clearly not a solution but needed for S101 as it has a repeating subfield at the end, tHis causes the entire string to get truncated and only DSTC remains
+    // if (strrchr(pszSublist, '*') != nullptr)
+    //     pszSublist = strrchr(pszSublist, '*');
 
     /* -------------------------------------------------------------------- */
     /*      Strip off the repeating marker, when it occurs, but mark our    */
