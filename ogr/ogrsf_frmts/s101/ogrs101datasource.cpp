@@ -125,114 +125,78 @@ OGRFeatureDefn* OGRS101DataSource::S101GenerateDSIDFeatureDefn()
     oField.Set("DSID_ENED", OFTString, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
-    oField.Set("DSID_DSNM", OFTString, 0, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSID_EDTN", OFTString, 0, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSID_UPDN", OFTString, 0, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSID_UADT", OFTString, 8, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSID_ISDT", OFTString, 8, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSID_STED", OFTReal, 11, 6);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSID_PRSP", OFTInteger, 3, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSID_PSDN", OFTString, 0, 0);
+    oField.Set("DSID_PRSP", OFTString, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
     oField.Set("DSID_PRED", OFTString, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
-    oField.Set("DSID_PROF", OFTInteger, 3, 0);
+    oField.Set("DSID_PROF", OFTString, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
-    oField.Set("DSID_AGEN", OFTInteger, 5, 0);
+    oField.Set("DSID_DSNM", OFTString, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
-    oField.Set("DSID_COMT", OFTString, 0, 0);
+    oField.Set("DSID_DSTL", OFTString, 0, 0);
     poFDefn->AddFieldDefn(&oField);
+
+    oField.Set("DSID_DSRD", OFTString, 8, 0);
+    poFDefn->AddFieldDefn(&oField);
+
+    oField.Set("DSID_DSLG", OFTString, 0, 0);
+    poFDefn->AddFieldDefn(&oField);
+
+    oField.Set("DSID_DSAB", OFTString, 0, 0);
+    poFDefn->AddFieldDefn(&oField);
+
+    oField.Set("DSID_DSED", OFTString, 0, 0);
+    poFDefn->AddFieldDefn(&oField);
+
+    // TODO: DSTC
+    // oField.Set("DSID_DSTC", OFTBinary, 32, 0);
+    // poFDefn->AddFieldDefn(&oField);
 
     /* -------------------------------------------------------------------- */
     /*      DSSI fields.                                                    */
     /* -------------------------------------------------------------------- */
 
-    oField.Set("DSSI_DSTR", OFTInteger, 3, 0);
+    oField.Set("DSSI_DCOX", OFTInteger64, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
-    oField.Set("DSSI_AALL", OFTInteger, 3, 0);
+    oField.Set("DSSI_DCOY", OFTInteger64, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
-    oField.Set("DSSI_NALL", OFTInteger, 3, 0);
+    oField.Set("DSSI_DCOZ", OFTInteger64, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
-    oField.Set("DSSI_NOMR", OFTInteger, 10, 0);
+    oField.Set("DSSI_CMFX", OFTInteger, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
-    oField.Set("DSSI_NOCR", OFTInteger, 10, 0);
+    oField.Set("DSSI_CMFY", OFTInteger, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
-    oField.Set("DSSI_NOGR", OFTInteger, 10, 0);
+    oField.Set("DSSI_CMFZ", OFTInteger, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
-    oField.Set("DSSI_NOLR", OFTInteger, 10, 0);
+    oField.Set("DSSI_NOIR", OFTInteger, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
-    oField.Set("DSSI_NOIN", OFTInteger, 10, 0);
+    oField.Set("DSSI_NOPN", OFTInteger, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
-    oField.Set("DSSI_NOCN", OFTInteger, 10, 0);
+    oField.Set("DSSI_NOMN", OFTInteger, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
-    oField.Set("DSSI_NOED", OFTInteger, 10, 0);
+    oField.Set("DSSI_NOCN", OFTInteger, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
-    oField.Set("DSSI_NOFA", OFTInteger, 10, 0);
+    oField.Set("DSSI_NOXN", OFTInteger, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
-    /* -------------------------------------------------------------------- */
-    /*      DSPM fields.                                                    */
-    /* -------------------------------------------------------------------- */
-
-    oField.Set("DSPM_HDAT", OFTInteger, 3, 0);
+    oField.Set("DSSI_NOSN", OFTInteger, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
-    oField.Set("DSPM_VDAT", OFTInteger, 3, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSPM_SDAT", OFTInteger, 3, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSPM_CSCL", OFTInteger, 10, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSPM_DUNI", OFTInteger, 3, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSPM_HUNI", OFTInteger, 3, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSPM_PUNI", OFTInteger, 3, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSPM_COUN", OFTInteger, 3, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSPM_COMF", OFTInteger, 10, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSPM_SOMF", OFTInteger, 10, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSPM_COMT", OFTString, 0, 0);
+    oField.Set("DSSI_NOFR", OFTInteger, 0, 0);
     poFDefn->AddFieldDefn(&oField);
 
     return poFDefn;

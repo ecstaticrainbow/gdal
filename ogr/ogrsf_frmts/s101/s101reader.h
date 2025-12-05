@@ -22,6 +22,10 @@ class CPL_DLL S101Reader
 
     DDFModule *poModule;
 
+    int nCMFX; /* X Coordinate multiplier */
+    int nCMFY; /* Y Coordinate multiplier */
+    int nCMFZ; /* Z Vertical multiplier */
+
     bool bFileIngested;
 
     bool bMissingWarningIssued;
@@ -32,7 +36,7 @@ class CPL_DLL S101Reader
 
     int nNextDSIDIndex;
     DDFRecord *poDSIDRecord;
-    DDFRecord *poDSPMRecord;
+    DDFRecord *poDSSIRecord;
     std::string m_osEDTNUpdate;
     std::string m_osUPDNUpdate;
     std::string m_osISDTUpdate;

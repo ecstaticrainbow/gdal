@@ -7,10 +7,11 @@
 
 
 S101Reader::S101Reader(const char *pszFilename)
-    : pszModuleName(CPLStrdup(pszFilename)), pszDSNM(nullptr), poModule(nullptr),
-      bFileIngested(false), bMissingWarningIssued(false),
-      bAttrWarningIssued(false), nFDefnCount(0), papoFDefnList(nullptr),
-      nNextDSIDIndex(0), poDSIDRecord(nullptr), poDSPMRecord(nullptr)
+    : pszModuleName(CPLStrdup(pszFilename)), pszDSNM(nullptr),
+      poModule(nullptr), nCMFX(10000000), nCMFY(10000000), nCMFZ(10), bFileIngested(false),
+      bMissingWarningIssued(false), bAttrWarningIssued(false), nFDefnCount(0),
+      papoFDefnList(nullptr), nNextDSIDIndex(0), poDSIDRecord(nullptr),
+      poDSSIRecord(nullptr)
 {
 }
 
@@ -152,20 +153,19 @@ bool S101Reader::Ingest()
             if (!bSuccess && CPLGetLastErrorType() == CE_Failure)
                 break;
 
-            const char *pszEDTN =
-                poRecord->GetStringSubfield("DSID", 0, "EDTN", 0);
-            if (pszEDTN)
-                m_osEDTNUpdate = pszEDTN;
+            nCMFX = std::max(
+                1, poRecord->GetIntSubfield("DSSI", 0, "CMFX", 0, &bSuccess));
+            if (!bSuccess && CPLGetLastErrorType() == CE_Failure)
+                break;
+            nCMFY = std::max(
+                1, poRecord->GetIntSubfield("DSSI", 0, "CMFY", 0, &bSuccess));
+            if (!bSuccess && CPLGetLastErrorType() == CE_Failure)
+                break;
 
-            const char *pszUPDN =
-                poRecord->GetStringSubfield("DSID", 0, "UPDN", 0);
-            if (pszUPDN)
-                m_osUPDNUpdate = pszUPDN;
-
-            const char *pszISDT =
-                poRecord->GetStringSubfield("DSID", 0, "ISDT", 0);
-            if (pszISDT)
-                m_osISDTUpdate = pszISDT;
+            nCMFZ = std::max(
+               1, poRecord->GetIntSubfield("DSSI", 0, "CMFZ", 0, &bSuccess));
+            if (!bSuccess && CPLGetLastErrorType() == CE_Failure)
+                break;
 
             // if (nOptionFlags & S57M_RETURN_DSID)
             // {
@@ -175,27 +175,6 @@ bool S101Reader::Ingest()
             //     poDSIDRecord = poRecord->Clone();
             // }
             poDSIDRecord = poRecord->Clone();
-        }
-
-        else if (EQUAL(pszName, "DSPM"))
-        {
-            // int bSuccess = FALSE;
-            // nCOMF = std::max(
-            //     1, poRecord->GetIntSubfield("DSPM", 0, "COMF", 0, &bSuccess));
-            // if (!bSuccess && CPLGetLastErrorType() == CE_Failure)
-            //     break;
-            // nSOMF = std::max(
-            //     1, poRecord->GetIntSubfield("DSPM", 0, "SOMF", 0, &bSuccess));
-            // if (!bSuccess && CPLGetLastErrorType() == CE_Failure)
-            //     break;
-            //
-            // if (nOptionFlags & S57M_RETURN_DSID)
-            // {
-            //     if (poDSPMRecord != nullptr)
-            //         delete poDSPMRecord;
-            //
-            //     poDSPMRecord = poRecord->Clone();
-            // }
         }
 
         else
@@ -229,7 +208,7 @@ OGRFeature *S101Reader::ReadDSID()
     if (!bFileIngested && !Ingest())
         return nullptr;
 
-    if (poDSIDRecord == nullptr && poDSPMRecord == nullptr)
+    if (poDSIDRecord == nullptr && poDSSIRecord == nullptr)
         return nullptr;
 
     /* -------------------------------------------------------------------- */
@@ -266,97 +245,58 @@ OGRFeature *S101Reader::ReadDSID()
                             poDSIDRecord->GetStringSubfield("DSID", 0, "ENSP", 0));
         poFeature->SetField("DSID_ENED",
                             poDSIDRecord->GetStringSubfield("DSID", 0, "ENED", 0));
-        poFeature->SetField(
-            "DSID_DSNM", poDSIDRecord->GetStringSubfield("DSID", 0, "DSNM", 0));
-        // if (!m_osEDTNUpdate.empty())
-        //     poFeature->SetField("DSID_EDTN", m_osEDTNUpdate.c_str());
-        // else
-        //     poFeature->SetField("DSID_EDTN", poDSIDRecord->GetStringSubfield(
-        //                                          "DSID", 0, "EDTN", 0));
-        // if (!m_osUPDNUpdate.empty())
-        //     poFeature->SetField("DSID_UPDN", m_osUPDNUpdate.c_str());
-        // else
-        //     poFeature->SetField("DSID_UPDN", poDSIDRecord->GetStringSubfield(
-        //                                          "DSID", 0, "UPDN", 0));
-        //
-        // poFeature->SetField(
-        //     "DSID_UADT", poDSIDRecord->GetStringSubfield("DSID", 0, "UADT", 0));
-        // if (!m_osISDTUpdate.empty())
-        //     poFeature->SetField("DSID_ISDT", m_osISDTUpdate.c_str());
-        // else
-        //     poFeature->SetField("DSID_ISDT", poDSIDRecord->GetStringSubfield(
-        //                                          "DSID", 0, "ISDT", 0));
-        poFeature->SetField(
-            "DSID_STED", poDSIDRecord->GetFloatSubfield("DSID", 0, "STED", 0));
         poFeature->SetField("DSID_PRSP",
-                            poDSIDRecord->GetIntSubfield("DSID", 0, "PRSP", 0));
-        poFeature->SetField(
-            "DSID_PSDN", poDSIDRecord->GetStringSubfield("DSID", 0, "PSDN", 0));
-        poFeature->SetField(
-            "DSID_PRED", poDSIDRecord->GetStringSubfield("DSID", 0, "PRED", 0));
+                            poDSIDRecord->GetStringSubfield("DSID", 0, "PRSP", 0));
+        poFeature->SetField("DSID_PRED",
+                            poDSIDRecord->GetStringSubfield("DSID", 0, "PRED", 0));
         poFeature->SetField("DSID_PROF",
-                            poDSIDRecord->GetIntSubfield("DSID", 0, "PROF", 0));
-        poFeature->SetField("DSID_AGEN",
-                            poDSIDRecord->GetIntSubfield("DSID", 0, "AGEN", 0));
-        poFeature->SetField(
-            "DSID_COMT", poDSIDRecord->GetStringSubfield("DSID", 0, "COMT", 0));
+                            poDSIDRecord->GetStringSubfield("DSID", 0, "PROF", 0));
+        poFeature->SetField("DSID_DSNM",
+                            poDSIDRecord->GetStringSubfield("DSID", 0, "DSMN", 0));
+        poFeature->SetField("DSID_DSTL",
+                            poDSIDRecord->GetStringSubfield("DSID", 0, "DSTL", 0));
+        poFeature->SetField("DSID_DSRD",
+                            poDSIDRecord->GetStringSubfield("DSID", 0, "DSRD", 0));
+        poFeature->SetField("DSID_DSLG",
+                            poDSIDRecord->GetStringSubfield("DSID", 0, "DLSG", 0));
+        poFeature->SetField("DSID_DSAB",
+                            poDSIDRecord->GetStringSubfield("DSID", 0, "DSAB", 0));
+        poFeature->SetField("DSID_DSED",
+                            poDSIDRecord->GetStringSubfield("DSID", 0, "DSED", 0));
+
+        // TODO: DSTC
 
         /* --------------------------------------------------------------------
          */
         /*      Apply DSSI values. */
         /* --------------------------------------------------------------------
          */
-        poFeature->SetField("DSSI_DSTR",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "DSTR", 0));
-        poFeature->SetField("DSSI_AALL",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "AALL", 0));
-        poFeature->SetField("DSSI_NALL",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NALL", 0));
-        poFeature->SetField("DSSI_NOMR",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOMR", 0));
-        poFeature->SetField("DSSI_NOCR",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOCR", 0));
-        poFeature->SetField("DSSI_NOGR",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOGR", 0));
-        poFeature->SetField("DSSI_NOLR",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOLR", 0));
-        poFeature->SetField("DSSI_NOIN",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOIN", 0));
+        poFeature->SetField("DSSI_DCOX",
+                            poDSIDRecord->GetIntSubfield("DSSI", 0, "DCOX", 0));
+        poFeature->SetField("DSSI_DCOY",
+                            poDSIDRecord->GetIntSubfield("DSSI", 0, "DCOY", 0));
+        poFeature->SetField("DSSI_DCOZ",
+                            poDSIDRecord->GetIntSubfield("DSSI", 0, "DCOZ", 0));
+        poFeature->SetField("DSSI_CMFX",
+                            poDSIDRecord->GetIntSubfield("DSSI", 0, "CMFX", 0));
+        poFeature->SetField("DSSI_CMFY",
+                            poDSIDRecord->GetIntSubfield("DSSI", 0, "CMFY", 0));
+        poFeature->SetField("DSSI_CMFZ",
+                            poDSIDRecord->GetIntSubfield("DSSI", 0, "CMFZ", 0));
+        poFeature->SetField("DSSI_NOIR",
+                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOIR", 0));
+        poFeature->SetField("DSSI_NOPN",
+                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOPN", 0));
+        poFeature->SetField("DSSI_NOMN",
+                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOMN", 0));
         poFeature->SetField("DSSI_NOCN",
                             poDSIDRecord->GetIntSubfield("DSSI", 0, "NOCN", 0));
-        poFeature->SetField("DSSI_NOED",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOED", 0));
-        poFeature->SetField("DSSI_NOFA",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOFA", 0));
-    }
-
-    /* -------------------------------------------------------------------- */
-    /*      Apply DSPM record.                                              */
-    /* -------------------------------------------------------------------- */
-    if (poDSPMRecord != nullptr)
-    {
-        poFeature->SetField("DSPM_HDAT",
-                            poDSPMRecord->GetIntSubfield("DSPM", 0, "HDAT", 0));
-        poFeature->SetField("DSPM_VDAT",
-                            poDSPMRecord->GetIntSubfield("DSPM", 0, "VDAT", 0));
-        poFeature->SetField("DSPM_SDAT",
-                            poDSPMRecord->GetIntSubfield("DSPM", 0, "SDAT", 0));
-        poFeature->SetField("DSPM_CSCL",
-                            poDSPMRecord->GetIntSubfield("DSPM", 0, "CSCL", 0));
-        poFeature->SetField("DSPM_DUNI",
-                            poDSPMRecord->GetIntSubfield("DSPM", 0, "DUNI", 0));
-        poFeature->SetField("DSPM_HUNI",
-                            poDSPMRecord->GetIntSubfield("DSPM", 0, "HUNI", 0));
-        poFeature->SetField("DSPM_PUNI",
-                            poDSPMRecord->GetIntSubfield("DSPM", 0, "PUNI", 0));
-        poFeature->SetField("DSPM_COUN",
-                            poDSPMRecord->GetIntSubfield("DSPM", 0, "COUN", 0));
-        poFeature->SetField("DSPM_COMF",
-                            poDSPMRecord->GetIntSubfield("DSPM", 0, "COMF", 0));
-        poFeature->SetField("DSPM_SOMF",
-                            poDSPMRecord->GetIntSubfield("DSPM", 0, "SOMF", 0));
-        poFeature->SetField(
-            "DSPM_COMT", poDSPMRecord->GetStringSubfield("DSPM", 0, "COMT", 0));
+        poFeature->SetField("DSSI_NOXN",
+                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOXN", 0));
+        poFeature->SetField("DSSI_NOSN",
+                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOSN", 0));
+        poFeature->SetField("DSSI_NOFR",
+                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOFR", 0));
     }
 
     poFeature->SetFID(nNextDSIDIndex++);
