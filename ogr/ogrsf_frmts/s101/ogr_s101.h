@@ -19,14 +19,13 @@ class OGRS101Layer : public OGRLayer
     OGRS101DataSource *poDS;
 
     OGRFeatureDefn* poFeatureDefn = nullptr;
+    int nCurrentModule;
+
     OGRSpatialReference* poSRS = nullptr;
     size_t iNext = 0;
 
-    //TODO
-    const char *fileName;
-
 public:
-    OGRS101Layer(OGRS101DataSource *poDSIn, OGRFeatureDefn *poDefnIn, const char *pszName);
+    OGRS101Layer(OGRS101DataSource *poDSIn, OGRFeatureDefn *poDefnIn);
 
     ~OGRS101Layer() override;
 
@@ -35,7 +34,9 @@ public:
     void ResetReading() override;
     int TestCapability(const char *) const override;
 
-    OGRFeature* GetNextFeature() override;
+    OGRFeature *GetNextFeature() override;
+    OGRFeature *GetNextUnfilteredFeature();
+    OGRFeature *GetFeature(GIntBig nFeatureId) override;
 };
 
 class OGRS101DataSource final : public GDALDataset
@@ -59,9 +60,13 @@ public:
 
     int Open(const char *pszName);
     void AddLayer(OGRS101Layer *);
-    static OGRFeatureDefn* S101GenerateDSIDFeatureDefn();
     int GetLayerCount() const override
     { return nLayers; }
+
+    int GetModuleCount()
+    {
+        return nModules;
+    }
 
     OGRLayer *GetLayer(int iLayer) const override
     {
@@ -70,9 +75,20 @@ public:
         return papoLayers[iLayer];
     }
 
-    S101Reader *GetModule(int);
-
-    void BuildLayers();
+    S101Reader *GetModule(int) const;
 };
+
+/* -------------------------------------------------------------------- */
+/*      Functions to create OGRFeatureDefns.                            */
+/* -------------------------------------------------------------------- */
+void CPL_DLL S101GenerateStandardAttributes(OGRFeatureDefn *, int);
+OGRFeatureDefn CPL_DLL *S101GenerateGeomFeatureDefn(OGRwkbGeometryType, int);
+OGRFeatureDefn CPL_DLL *
+S101GenerateObjectClassDefn(//S57ClassRegistrar *,
+                           //S57ClassContentExplorer *poClassContentExplorer,
+                           int,
+                           int);
+OGRFeatureDefn CPL_DLL *S101GenerateVectorPrimitiveFeatureDefn(int, int);
+OGRFeatureDefn CPL_DLL *S101GenerateDSIDFeatureDefn(void);
 
 #endif //OGR_S101_H

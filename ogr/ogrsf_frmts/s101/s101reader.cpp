@@ -135,13 +135,17 @@ bool S101Reader::Ingest()
 
         else if (EQUAL(pszName, "FRID"))
         {
-            // int bSuccess = FALSE;
-            // int nRCID =
-            //     poRecord->GetIntSubfield("FRID", 0, "RCID", 0, &bSuccess);
-            // if (!bSuccess && CPLGetLastErrorType() == CE_Failure)
-            //     break;
-            //
-            // oFE_Index.AddRecord(nRCID, poRecord->Clone());
+            int bSuccess = FALSE;
+            int nRCID =
+                poRecord->GetIntSubfield("FRID", 0, "RCID", 0, &bSuccess);
+
+            auto blah = poRecord->FindField("ATTR");
+            // TODO: Notes for next time, was in the middle of working out how to read the attribute values of features
+            // FRID is the right place but possibly need to implement the DDFINDEX below so that each feature can be read
+            if (!bSuccess && CPLGetLastErrorType() == CE_Failure)
+                break;
+
+            //oFE_Index.AddRecord(nRCID, poRecord->Clone());
         }
 
         else if (EQUAL(pszName, "DSID"))
@@ -325,4 +329,173 @@ void S101Reader::AddFeatureDefn(OGRFeatureDefn *poFDefn)
     //         }
     //     }
     // }
+}
+
+/************************************************************************/
+/*                          ReadNextFeature()                           */
+/************************************************************************/
+
+OGRFeature *S101Reader::ReadNextFeature(OGRFeatureDefn *poTarget)
+
+{
+    if (!bFileIngested && !Ingest())
+        return nullptr;
+
+    /* -------------------------------------------------------------------- */
+    /*      Special case for "in progress" multipoints being split up.      */
+    /* -------------------------------------------------------------------- */
+    // if (poMultiPoint != nullptr)
+    // {
+    //     if (poTarget == nullptr || poTarget == poMultiPoint->GetDefnRef())
+    //     {
+    //         return NextPendingMultiPoint();
+    //     }
+    //     else
+    //     {
+    //         ClearPendingMultiPoint();
+    //     }
+    // }
+
+    /* -------------------------------------------------------------------- */
+    /*      Next vector feature?                                            */
+    /* -------------------------------------------------------------------- */
+    // if ((nOptionFlags & S57M_RETURN_DSID) && nNextDSIDIndex == 0 &&
+    //     (poTarget == nullptr || EQUAL(poTarget->GetName(), "DSID")))
+    if (EQUAL(poTarget->GetName(), "DSID"))
+    {
+        return ReadDSID();
+    }
+
+    /* -------------------------------------------------------------------- */
+    /*      Next vector feature?                                            */
+    /* -------------------------------------------------------------------- */
+    // if (nOptionFlags & S57M_RETURN_PRIMITIVES)
+    // {
+    //     int nRCNM = 0;
+    //     int *pnCounter = nullptr;
+    //
+    //     if (poTarget == nullptr)
+    //     {
+    //         if (nNextVIIndex < oVI_Index.GetCount())
+    //         {
+    //             nRCNM = RCNM_VI;
+    //             pnCounter = &nNextVIIndex;
+    //         }
+    //         else if (nNextVCIndex < oVC_Index.GetCount())
+    //         {
+    //             nRCNM = RCNM_VC;
+    //             pnCounter = &nNextVCIndex;
+    //         }
+    //         else if (nNextVEIndex < oVE_Index.GetCount())
+    //         {
+    //             nRCNM = RCNM_VE;
+    //             pnCounter = &nNextVEIndex;
+    //         }
+    //         else if (nNextVFIndex < oVF_Index.GetCount())
+    //         {
+    //             nRCNM = RCNM_VF;
+    //             pnCounter = &nNextVFIndex;
+    //         }
+    //     }
+    //     else
+    //     {
+    //         if (EQUAL(poTarget->GetName(), OGRN_VI))
+    //         {
+    //             nRCNM = RCNM_VI;
+    //             pnCounter = &nNextVIIndex;
+    //         }
+    //         else if (EQUAL(poTarget->GetName(), OGRN_VC))
+    //         {
+    //             nRCNM = RCNM_VC;
+    //             pnCounter = &nNextVCIndex;
+    //         }
+    //         else if (EQUAL(poTarget->GetName(), OGRN_VE))
+    //         {
+    //             nRCNM = RCNM_VE;
+    //             pnCounter = &nNextVEIndex;
+    //         }
+    //         else if (EQUAL(poTarget->GetName(), OGRN_VF))
+    //         {
+    //             nRCNM = RCNM_VF;
+    //             pnCounter = &nNextVFIndex;
+    //         }
+    //     }
+    //
+    //     if (nRCNM != 0)
+    //     {
+    //         OGRFeature *poFeature = ReadVector(*pnCounter, nRCNM);
+    //         if (poFeature != nullptr)
+    //         {
+    //             *pnCounter += 1;
+    //             return poFeature;
+    //         }
+    //     }
+    // }
+
+    /* -------------------------------------------------------------------- */
+    /*      Next feature.                                                   */
+    /* -------------------------------------------------------------------- */
+    // while (nNextFEIndex < oFE_Index.GetCount())
+    // {
+    //     OGRFeatureDefn *poFeatureDefn = static_cast<OGRFeatureDefn *>(
+    //         oFE_Index.GetClientInfoByIndex(nNextFEIndex));
+    //
+    //     if (poFeatureDefn == nullptr)
+    //     {
+    //         poFeatureDefn = FindFDefn(oFE_Index.GetByIndex(nNextFEIndex));
+    //         oFE_Index.SetClientInfoByIndex(nNextFEIndex, poFeatureDefn);
+    //     }
+    //
+    //     if (poFeatureDefn != poTarget && poTarget != nullptr)
+    //     {
+    //         nNextFEIndex++;
+    //         continue;
+    //     }
+    //
+    //     OGRFeature *poFeature = ReadFeature(nNextFEIndex++, poTarget);
+    //     if (poFeature != nullptr)
+    //     {
+    //         if ((nOptionFlags & S57M_SPLIT_MULTIPOINT) &&
+    //             poFeature->GetGeometryRef() != nullptr &&
+    //             wkbFlatten(poFeature->GetGeometryRef()->getGeometryType()) ==
+    //                 wkbMultiPoint)
+    //         {
+    //             poMultiPoint = poFeature;
+    //             iPointOffset = 0;
+    //             return NextPendingMultiPoint();
+    //         }
+    //
+    //         return poFeature;
+    //     }
+    // }
+
+    return nullptr;
+}
+
+/************************************************************************/
+/*                            ReadFeature()                             */
+/*                                                                      */
+/*      Read the features who's id is provided.                         */
+/************************************************************************/
+
+OGRFeature *S101Reader::ReadFeature(int nFeatureId, OGRFeatureDefn *poTarget)
+
+{
+    if (nFeatureId < 0)// || nFeatureId >= oFE_Index.GetCount())
+        return nullptr;
+
+    OGRFeature *poFeature = nullptr;
+    //if ((nOptionFlags & S57M_RETURN_DSID) && nFeatureId == 0 &&
+    if(poTarget == nullptr || EQUAL(poTarget->GetName(), "DSID"))
+    {
+        poFeature = ReadDSID();
+    }
+    else
+    {
+        //poFeature = AssembleFeature(oFE_Index.GetByIndex(nFeatureId), poTarget);
+    }
+    if (poFeature != nullptr)
+        poFeature->SetFID(nFeatureId);
+
+    return poFeature;
 }

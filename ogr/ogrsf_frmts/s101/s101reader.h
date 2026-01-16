@@ -41,15 +41,29 @@ class CPL_DLL S101Reader
     std::string m_osUPDNUpdate;
     std::string m_osISDTUpdate;
 
+    int nOptionFlags;
+
   public:
     explicit S101Reader(const char *);
     ~S101Reader();
 
+    int GetOptionFlags()
+    {
+        return nOptionFlags;
+    }
+
     int Open(int bTestOpen);
     bool Ingest();
 
+    DDFModule *GetModule()
+    {
+        return poModule;
+    }
+
     OGRFeature *ReadDSID();
     void AddFeatureDefn(OGRFeatureDefn *);
+    OGRFeature *ReadNextFeature(OGRFeatureDefn * = nullptr);
+    OGRFeature *ReadFeature(int nFID, OGRFeatureDefn * = nullptr);
 };
 
 

@@ -7,13 +7,12 @@
 #include "s101reader.h"
 #include "miramon_common/mm_gdal_functions.h"
 
-OGRS101Layer::OGRS101Layer(OGRS101DataSource *poDSIn, OGRFeatureDefn *poDefnIn,
-                           const char *pszNameIn)
+OGRS101Layer::OGRS101Layer(OGRS101DataSource *poDSIn, OGRFeatureDefn *poDefnIn)
+    :nCurrentModule(-1)
 {
     poDS = poDSIn;
     poFeatureDefn = poDefnIn;
     SetDescription(poFeatureDefn->GetName());
-    fileName = pszNameIn;
 }
 
 OGRS101Layer::~OGRS101Layer()
@@ -38,16 +37,54 @@ int OGRS101Layer::TestCapability(const char *) const
 
 OGRFeature *OGRS101Layer::GetNextFeature()
 {
-    // TODO: Return parsed features
-    if (iNext > 0)
-        return nullptr;
-
     OGRFeature *poFeature = nullptr;
 
-    S101Reader *poReader = poDS->GetModule(0);
+    /* -------------------------------------------------------------------- */
+    /*      Read features till we find one that satisfies our current       */
+    /*      spatial criteria.                                               */
+    /* -------------------------------------------------------------------- */
+    while (true)
+    {
+        poFeature = GetNextUnfilteredFeature();
+        if (poFeature == nullptr)
+            break;
+
+        if ((m_poFilterGeom == nullptr ||
+             FilterGeometry(poFeature->GetGeometryRef())) &&
+            (m_poAttrQuery == nullptr || m_poAttrQuery->Evaluate(poFeature)))
+            break;
+
+        delete poFeature;
+    }
+
+    return poFeature;
+}
+
+/************************************************************************/
+/*                      GetNextUnfilteredFeature()                      */
+/************************************************************************/
+
+OGRFeature *OGRS101Layer::GetNextUnfilteredFeature()
+
+{
+    /* -------------------------------------------------------------------- */
+    /*      Are we out of modules to request features from?                 */
+    /* -------------------------------------------------------------------- */
+    if (nCurrentModule >= poDS->GetModuleCount())
+        return nullptr;
+
+    /* -------------------------------------------------------------------- */
+    /*      Set the current position on the current module and fetch a      */
+    /*      feature.                                                        */
+    /* -------------------------------------------------------------------- */
+    S101Reader *poReader = poDS->GetModule(nCurrentModule);
+    OGRFeature *poFeature = nullptr;
+
     if (poReader != nullptr)
     {
-        poFeature = poReader->ReadDSID();
+        //poReader->SetNextFEIndex(nNextFEIndex, nRCNM);
+        poFeature = poReader->ReadNextFeature(poFeatureDefn);
+        //nNextFEIndex = poReader->GetNextFEIndex(nRCNM);
     }
 
     /* -------------------------------------------------------------------- */
@@ -55,7 +92,16 @@ OGRFeature *OGRS101Layer::GetNextFeature()
     /* -------------------------------------------------------------------- */
     if (poFeature == nullptr)
     {
+        nCurrentModule++;
+        poReader = poDS->GetModule(nCurrentModule);
 
+        if (poReader != nullptr && poReader->GetModule() == nullptr)
+        {
+            if (!poReader->Open(FALSE))
+                return nullptr;
+        }
+
+        return GetNextUnfilteredFeature();
     }
     else
     {
@@ -66,4 +112,27 @@ OGRFeature *OGRS101Layer::GetNextFeature()
     }
 
     return poFeature;
+}
+
+/************************************************************************/
+/*                             GetFeature()                             */
+/************************************************************************/
+
+OGRFeature *OGRS101Layer::GetFeature(GIntBig nFeatureId)
+
+{
+    S101Reader *poReader = poDS->GetModule(0);  // not multi-reader aware
+
+    if (poReader != nullptr && nFeatureId <= INT_MAX)
+    {
+        OGRFeature *poFeature =
+            poReader->ReadFeature(static_cast<int>(nFeatureId), poFeatureDefn);
+
+        if (poFeature != nullptr && poFeature->GetGeometryRef() != nullptr)
+            poFeature->GetGeometryRef()->assignSpatialReference(
+                GetSpatialRef());
+        return poFeature;
+    }
+
+    return nullptr;
 }
