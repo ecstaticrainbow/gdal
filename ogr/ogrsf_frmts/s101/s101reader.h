@@ -9,6 +9,7 @@
 #include <vector>
 #include "ogr_feature.h"
 #include "iso8211.h"
+#include "s57/s57.h"
 
 /************************************************************************/
 /*                              S57Reader                               */
@@ -33,6 +34,9 @@ class CPL_DLL S101Reader
 
     int nFDefnCount;
     OGRFeatureDefn **papoFDefnList;
+
+    DDFRecordIndex oFE_Index;
+
 
     int nNextDSIDIndex;
     DDFRecord *poDSIDRecord;
@@ -62,6 +66,9 @@ class CPL_DLL S101Reader
 
     OGRFeature *ReadDSID();
     void AddFeatureDefn(OGRFeatureDefn *);
+
+    bool CollectClassList(std::vector<int> &anClassCount);
+
     OGRFeature *ReadNextFeature(OGRFeatureDefn * = nullptr);
     OGRFeature *ReadFeature(int nFID, OGRFeatureDefn * = nullptr);
 };

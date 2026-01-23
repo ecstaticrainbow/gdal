@@ -45,6 +45,8 @@ int OGRS101DataSource::Open(const char *pszName)
         return FALSE;
     }
 
+    bool bSuccess = true;
+
     nModules = 1;
     papoModules = static_cast<S101Reader **>(CPLMalloc(sizeof(void *)));
     papoModules[0] = poModule;
@@ -63,7 +65,7 @@ int OGRS101DataSource::Open(const char *pszName)
     /*      Initialize a layer for each type of geometry.  Eventually       */
     /*      we will do this by object class.                                */
     /* -------------------------------------------------------------------- */
-    // if (OGRS57Driver::GetS57Registrar() == nullptr)
+    if (false) //if (OGRS57Driver::GetS57Registrar() == nullptr)
     {
         OGRFeatureDefn *poDefn =
             S101GenerateGeomFeatureDefn(wkbPoint, poModule->GetOptionFlags());
@@ -84,6 +86,60 @@ int OGRS101DataSource::Open(const char *pszName)
 
         poDefn = S101GenerateObjectClassDefn(0, poModule->GetOptionFlags());
         AddLayer(new OGRS101Layer(this, poDefn));
+    }
+
+    /* -------------------------------------------------------------------- */
+    /*      Initialize a feature definition for each class that actually    */
+    /*      occurs in the dataset.                                          */
+    /* -------------------------------------------------------------------- */
+    else
+    {
+        // poClassContentExplorer =
+        //     new S57ClassContentExplorer(OGRS57Driver::GetS57Registrar());
+        //
+        // for (int iModule = 0; iModule < nModules; iModule++)
+        //     papoModules[iModule]->SetClassBased(OGRS57Driver::GetS57Registrar(),
+        //                                         poClassContentExplorer);
+        //
+        std::vector<int> anClassCount;
+
+        for (int iModule = 0; iModule < nModules; iModule++)
+        {
+            bSuccess &= CPL_TO_BOOL(
+                papoModules[iModule]->CollectClassList(anClassCount));
+        }
+
+        bool bGeneric = false;
+
+        for (unsigned int iClass = 0; iClass < anClassCount.size(); iClass++)
+        {
+            if (anClassCount[iClass] > 0)
+            {
+                // TODO: we now know what features are in the file, we need to map them to feature names from the FTSC field
+
+
+                // OGRFeatureDefn *poDefn = S57GenerateObjectClassDefn(
+                //     OGRS101Driver::GetS57Registrar(), poClassContentExplorer,
+                //     iClass, poModule->GetOptionFlags());
+                //
+                // if (poDefn != nullptr)
+                //     AddLayer(
+                //         new OGRS101Layer(this, poDefn, anClassCount[iClass]));
+                // else
+                // {
+                //     bGeneric = true;
+                //     CPLDebug("S57", "Unable to find definition for OBJL=%d\n",
+                //              iClass);
+                // }
+            }
+        }
+        //
+        // if (bGeneric)
+        // {
+        //     OGRFeatureDefn *poDefn = S57GenerateGeomFeatureDefn(
+        //         wkbUnknown, poModule->GetOptionFlags());
+        //     AddLayer(new OGRS57Layer(this, poDefn));
+        // }
     }
 
 

@@ -139,13 +139,10 @@ bool S101Reader::Ingest()
             int nRCID =
                 poRecord->GetIntSubfield("FRID", 0, "RCID", 0, &bSuccess);
 
-            auto blah = poRecord->FindField("ATTR");
-            // TODO: Notes for next time, was in the middle of working out how to read the attribute values of features
-            // FRID is the right place but possibly need to implement the DDFINDEX below so that each feature can be read
             if (!bSuccess && CPLGetLastErrorType() == CE_Failure)
                 break;
 
-            //oFE_Index.AddRecord(nRCID, poRecord->Clone());
+            oFE_Index.AddRecord(nRCID, poRecord->Clone());
         }
 
         else if (EQUAL(pszName, "DSID"))
@@ -170,6 +167,33 @@ bool S101Reader::Ingest()
                1, poRecord->GetIntSubfield("DSSI", 0, "CMFZ", 0, &bSuccess));
             if (!bSuccess && CPLGetLastErrorType() == CE_Failure)
                 break;
+
+
+            // TODO: left over code for getting the FTCS map so we can map NFTC to matching FTNC in order to get the OBJ name
+            // DDFField* poFTCS = poRecord->FindField("FTCS");
+            // if( !poFTCS ) break; // no FTCS present
+            //
+            // DDFFieldDefn* poFTCSDefn = poFTCS->GetFieldDefn();
+            // const DDFSubfieldDefn *poFTCDDefn =
+            //     poFTCSDefn->FindSubfieldDefn("FTCD"); // code/name (A)
+            // const DDFSubfieldDefn *poFTNCDefn =
+            //     poFTCSDefn->FindSubfieldDefn("FTNC"); // numeric (b12)
+            //
+            // // FTCS is repeating: (FTCD, FTNC)
+            // for (int iRep = 0; iRep < poFTCS->GetRepeatCount(); iRep++)
+            // {
+            //     int nBytesRemaining = 0;
+            //
+            //     // FTCD (string)
+            //     const char* pszFTCDData = poFTCS->GetSubfieldData(poFTCDDefn, &nBytesRemaining, iRep);
+            //     const char* pszFTCD = poFTCDDefn->ExtractStringData(pszFTCDData, nBytesRemaining, nullptr);
+            //
+            //     // FTNC (numeric b12)
+            //     const char* pszFTNCData = poFTCS->GetSubfieldData(poFTNCDefn, &nBytesRemaining, iRep);
+            //     int nFTNC = poFTNCDefn->ExtractIntData(pszFTNCData, nBytesRemaining, nullptr);
+            //
+            //     oFE_Index.AddRecord(nFTNC, poRecord);
+            // }
 
             // if (nOptionFlags & S57M_RETURN_DSID)
             // {
@@ -329,6 +353,39 @@ void S101Reader::AddFeatureDefn(OGRFeatureDefn *poFDefn)
     //         }
     //     }
     // }
+}
+
+/************************************************************************/
+/*                          CollectClassList()                          */
+/*                                                                      */
+/*      Establish the list of classes (unique OBJL values) that         */
+/*      occur in this dataset.                                          */
+/************************************************************************/
+
+bool S101Reader::CollectClassList(std::vector<int> &anClassCount)
+
+{
+    if (!bFileIngested && !Ingest())
+        return false;
+
+    bool bSuccess = true;
+
+    for (int iFEIndex = 0; iFEIndex < oFE_Index.GetCount(); iFEIndex++)
+    {
+        DDFRecord *poRecord = oFE_Index.GetByIndex(iFEIndex);
+        const int nOBJL = poRecord->GetIntSubfield("FRID", 0, "NFTC", 0);
+
+        if (nOBJL < 0)
+            bSuccess = false;
+        else
+        {
+            if (nOBJL >= (int)anClassCount.size())
+                anClassCount.resize(nOBJL + 1);
+            anClassCount[nOBJL]++;
+        }
+    }
+
+    return bSuccess;
 }
 
 /************************************************************************/
