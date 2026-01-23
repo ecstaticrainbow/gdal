@@ -11,9 +11,18 @@
 #include "iso8211.h"
 #include "s57/s57.h"
 
+#include <unordered_map>
+
 /************************************************************************/
 /*                              S57Reader                               */
 /************************************************************************/
+
+struct S101FeatureTypeRow
+{
+    int nFTNC = -1;
+    std::string osName;
+};
+
 
 class CPL_DLL S101Reader
 {
@@ -68,6 +77,7 @@ class CPL_DLL S101Reader
     void AddFeatureDefn(OGRFeatureDefn *);
 
     bool CollectClassList(std::vector<int> &anClassCount);
+    bool BuildFeatureTypeMap(std::unordered_map<int, S101FeatureTypeRow> &m_oFTNCToType);
 
     OGRFeature *ReadNextFeature(OGRFeatureDefn * = nullptr);
     OGRFeature *ReadFeature(int nFID, OGRFeatureDefn * = nullptr);

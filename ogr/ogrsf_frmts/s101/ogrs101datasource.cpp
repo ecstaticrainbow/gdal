@@ -94,6 +94,8 @@ int OGRS101DataSource::Open(const char *pszName)
     /* -------------------------------------------------------------------- */
     else
     {
+        auto blah = OGRS101Driver::GetS101Registrar();
+
         // poClassContentExplorer =
         //     new S57ClassContentExplorer(OGRS57Driver::GetS57Registrar());
         //
@@ -102,12 +104,18 @@ int OGRS101DataSource::Open(const char *pszName)
         //                                         poClassContentExplorer);
         //
         std::vector<int> anClassCount;
+        std::unordered_map<int, S101FeatureTypeRow> m_oFTNCToType;
 
         for (int iModule = 0; iModule < nModules; iModule++)
         {
             bSuccess &= CPL_TO_BOOL(
                 papoModules[iModule]->CollectClassList(anClassCount));
+
+            bSuccess &= CPL_TO_BOOL(
+                papoModules[iModule]->BuildFeatureTypeMap(m_oFTNCToType));
         }
+
+
 
         bool bGeneric = false;
 

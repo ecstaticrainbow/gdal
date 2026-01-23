@@ -7,6 +7,9 @@
 
 #include "ogrsf_frmts.h"
 #include "s101reader.h"
+#include "s101classregistrar.h"
+
+#include <unordered_map>
 
 class OGRS101DataSource;
 
@@ -38,6 +41,10 @@ public:
     OGRFeature *GetNextUnfilteredFeature();
     OGRFeature *GetFeature(GIntBig nFeatureId) override;
 };
+
+/************************************************************************/
+/*                           OGRS101DataSource                          */
+/************************************************************************/
 
 class OGRS101DataSource final : public GDALDataset
 {
@@ -77,6 +84,26 @@ public:
 
     S101Reader *GetModule(int) const;
 };
+
+/************************************************************************/
+/*                            OGRS57Driver                              */
+/************************************************************************/
+
+class OGRS101Driver final : public GDALDriver
+{
+    static S101ClassRegistrar *poRegistrar;
+
+public:
+    OGRS101Driver();
+    ~OGRS101Driver() override;
+
+    static GDALDataset *Open(GDALOpenInfo *poOpenInfo);
+    static GDALDataset *Create(const char *pszName, int nBands, int nXSize,
+                               int nYSize, GDALDataType eDT,
+                               char **papszOptions);
+    static S101ClassRegistrar *GetS101Registrar();
+};
+
 
 /* -------------------------------------------------------------------- */
 /*      Functions to create OGRFeatureDefns.                            */

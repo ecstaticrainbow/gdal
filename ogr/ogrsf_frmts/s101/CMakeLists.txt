@@ -8,6 +8,8 @@ add_gdal_driver(
         s101reader.h
         s101reader.cpp
         s101featuredefinitions.cpp
+        s101classregistrar.cpp
+        s101classregistrar.h
     BUILTIN
 )
 target_include_directories(ogr_S101 PRIVATE $<TARGET_PROPERTY:gdal_iso8211,SOURCE_DIR>)

@@ -2,13 +2,36 @@
 // Created by tom on 11/21/25.
 //
 
+#include "cpl_multiproc.h"
 #include "ogr_s101.h"
+
+S101ClassRegistrar *OGRS101Driver::poRegistrar = nullptr;
+static CPLMutex *hS101RegistrarMutex = nullptr;
+
+OGRS101Driver::OGRS101Driver()
+{
+}
+
+OGRS101Driver::~OGRS101Driver()
+{
+    if (poRegistrar != nullptr)
+    {
+        delete poRegistrar;
+        poRegistrar = nullptr;
+    }
+
+    if (hS101RegistrarMutex != nullptr)
+    {
+        CPLDestroyMutex(hS101RegistrarMutex);
+        hS101RegistrarMutex = nullptr;
+    }
+}
 
 /************************************************************************/
 /*                                Open()                                */
 /************************************************************************/
 
-static GDALDataset* OGRS101DriverOpen(GDALOpenInfo *poOpenInfo)
+GDALDataset *OGRS101Driver::Open(GDALOpenInfo *poOpenInfo)
 {
     auto *poDS = new OGRS101DataSource();
 
@@ -56,10 +79,36 @@ static int OGRS101DriverIdentify(GDALOpenInfo *poOpenInfo)
 /*                                Create()                                */
 /************************************************************************/
 
-static GDALDataset* OGRS101DriverCreate(const char* pszName, int nXSize, int nYSize,
-                                    int nBands, GDALDataType eDT, char** papszOptions)
+GDALDataset *OGRS101Driver::Create(const char *pszName, int /* nBands */,
+                                  int /* nXSize */, int /* nYSize */,
+                                  GDALDataType /* eDT */, char **papszOptions)
 {
     return nullptr;
+}
+
+/************************************************************************/
+/*                          GetS101Registrar()                           */
+/************************************************************************/
+
+S101ClassRegistrar *OGRS101Driver::GetS101Registrar()
+{
+    /* -------------------------------------------------------------------- */
+    /*      Instantiate the class registrar if possible.                    */
+    /* -------------------------------------------------------------------- */
+    CPLMutexHolderD(&hS101RegistrarMutex);
+
+    if (poRegistrar == nullptr)
+    {
+        poRegistrar = new S101ClassRegistrar();
+
+        if (!poRegistrar->LoadInfo("/home/tom/gdal/101_Feature_Catalogue_2.0.0.xml")) // TODO: hardcorded path
+        {
+            delete poRegistrar;
+            poRegistrar = nullptr;
+        }
+    }
+
+    return poRegistrar;
 }
 
 /************************************************************************/
@@ -83,9 +132,9 @@ void RegisterOGRS101()
     poDriver->SetMetadataItem(GDAL_DCAP_MULTIPLE_VECTOR_LAYERS, "YES");
     poDriver->SetMetadataItem(GDAL_DCAP_Z_GEOMETRIES, "YES");
 
-    poDriver->pfnOpen = OGRS101DriverOpen;
+    poDriver->pfnOpen = OGRS101Driver::Open;
     poDriver->pfnIdentify = OGRS101DriverIdentify;
-    poDriver->pfnCreate = OGRS101DriverCreate;
+    poDriver->pfnCreate = OGRS101Driver::Create;
 
     GetGDALDriverManager()->RegisterDriver(poDriver);
 }

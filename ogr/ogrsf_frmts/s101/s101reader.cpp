@@ -388,6 +388,47 @@ bool S101Reader::CollectClassList(std::vector<int> &anClassCount)
     return bSuccess;
 }
 
+bool S101Reader::BuildFeatureTypeMap(std::unordered_map<int, S101FeatureTypeRow> &m_oFTNCToType)
+{
+    if( poDSIDRecord == nullptr )
+        return false;
+
+    DDFField* poFTCS = poDSIDRecord->FindField("FTCS");
+    if( poFTCS == nullptr )
+        return true; // dataset may omit it; handle gracefully
+
+    const int nRepeats = poFTCS->GetRepeatCount();
+    for( int i = 0; i < nRepeats; i++ )
+    {
+        S101FeatureTypeRow row;
+
+        int pszFTNC = poDSIDRecord->GetIntSubfield("FTCS", 0, "FTNC", i); // numeric code
+
+        const char* pszFTNM = poDSIDRecord->GetStringSubfield("FTCS", 0, "FTCD", i);
+
+        if( pszFTNC == 0 )
+            continue;
+
+        // row.nFTNC = atoi(pszFTNC);
+        //
+        // if( const char* psz = poFTCS->GetSubfieldData("FTNM", i) ) // example: name
+        //     row.osName = psz;
+        //
+        // // Handle duplicates deterministically (latest wins, or first wins, or warn)
+        // auto [it, inserted] = m_oFTNCToType.emplace(row.nFTNC, row);
+        // if( !inserted )
+        // {
+        //     // Choose a policy:
+        //     //  - overwrite
+        //     it->second = std::move(row);
+        //
+        //     //  - or keep-first and ignore others
+        //     //  - or CPLDebug/CPLWarning about duplicate FTNC
+        // }
+    }
+    return true;
+}
+
 /************************************************************************/
 /*                          ReadNextFeature()                           */
 /************************************************************************/
