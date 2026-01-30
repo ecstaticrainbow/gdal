@@ -9,8 +9,6 @@
 #include "s101reader.h"
 #include "s101classregistrar.h"
 
-#include <unordered_map>
-
 class OGRS101DataSource;
 
 /************************************************************************/
@@ -54,33 +52,29 @@ public:
     int nModules;
     S101Reader **papoModules;
 
+    S101ClassContentExplorer *poClassContentExplorer;
+
     OGRS101Layer **papoLayers;
     int nLayers;
     // TODO
     const char *pszFilename;
-    OGRS101DataSource() = default;
-    ~OGRS101DataSource() override
-    {
-        for (int i = 0; i < nLayers; i++)
-            delete papoLayers[i];
-    }
+    explicit OGRS101DataSource(char **papszOpenOptions = nullptr);
+    ~OGRS101DataSource() override;
 
     int Open(const char *pszName);
     void AddLayer(OGRS101Layer *);
     int GetLayerCount() const override
-    { return nLayers; }
+    {
+        return nLayers;
+    }
 
     int GetModuleCount()
     {
         return nModules;
     }
 
-    OGRLayer *GetLayer(int iLayer) const override
-    {
-        if (iLayer < 0 || iLayer >= nLayers)
-            return nullptr;
-        return papoLayers[iLayer];
-    }
+    using GDALDataset::GetLayer;
+    const OGRLayer *GetLayer(int) const override;
 
     S101Reader *GetModule(int) const;
 };
@@ -111,9 +105,9 @@ public:
 void CPL_DLL S101GenerateStandardAttributes(OGRFeatureDefn *, int);
 OGRFeatureDefn CPL_DLL *S101GenerateGeomFeatureDefn(OGRwkbGeometryType, int);
 OGRFeatureDefn CPL_DLL *
-S101GenerateObjectClassDefn(//S57ClassRegistrar *,
-                           //S57ClassContentExplorer *poClassContentExplorer,
-                           int,
+S101GenerateObjectClassDefn(S101ClassRegistrar *,
+                           S101ClassContentExplorer *poClassContentExplorer,
+                           const char*,
                            int);
 OGRFeatureDefn CPL_DLL *S101GenerateVectorPrimitiveFeatureDefn(int, int);
 OGRFeatureDefn CPL_DLL *S101GenerateDSIDFeatureDefn(void);

@@ -6,24 +6,78 @@
 
 
 /************************************************************************/
-/*                         Hard-coded S-101 catalogue                  */
+/*                          OGRS57DataSource()                          */
 /************************************************************************/
 
-static const struct
+OGRS101DataSource::OGRS101DataSource(char **papszOpenOptionsIn)
+    : nLayers(0), papoLayers(nullptr),nModules(0), papoModules(nullptr),
+      poClassContentExplorer(nullptr)
 {
-    const char* code;
-    const char* layerName;
-} gaS101Catalogue[] =
-{
-    {"BOYSPP", "BuoySpecialPurpose"},
-    {"BOYSAW", "SafeWaterBuoy"},
-    {"SLCONS", "SlopeConstruction"},
-    {"LNDARE", "LandArea"},
-    // Add as many as you need…
-};
+    // poSpatialRef->SetWellKnownGeogCS("WGS84");
+    // poSpatialRef->SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
 
-static const int nS101FeatureTypes =
-    sizeof(gaS101Catalogue) / sizeof(gaS101Catalogue[0]);
+    /* -------------------------------------------------------------------- */
+    /*      Allow initialization of options from the environment.           */
+    /* -------------------------------------------------------------------- */
+    const char *pszOptString = CPLGetConfigOption("OGR_S57_OPTIONS", nullptr);
+
+    if (pszOptString != nullptr)
+    {
+        // papszOptions =
+        //     CSLTokenizeStringComplex(pszOptString, ",", FALSE, FALSE);
+        //
+        // if (papszOptions && *papszOptions)
+        // {
+        //     CPLDebug("S57", "The following S57 options are being set:");
+        //     char **papszCurOption = papszOptions;
+        //     while (*papszCurOption)
+        //         CPLDebug("S57", "    %s", *papszCurOption++);
+        // }
+    }
+
+    /* -------------------------------------------------------------------- */
+    /*      And from open options.                                          */
+    /* -------------------------------------------------------------------- */
+    for (char **papszIter = papszOpenOptionsIn; papszIter && *papszIter;
+         ++papszIter)
+    {
+        char *pszKey = nullptr;
+        const char *pszValue = CPLParseNameValue(*papszIter, &pszKey);
+        if (pszKey && pszValue)
+        {
+            //papszOptions = CSLSetNameValue(papszOptions, pszKey, pszValue);
+        }
+        CPLFree(pszKey);
+    }
+}
+
+/************************************************************************/
+/*                         ~OGRS57DataSource()                          */
+/************************************************************************/
+
+OGRS101DataSource::~OGRS101DataSource()
+
+{
+    for (int i = 0; i < nLayers; i++)
+        delete papoLayers[i];
+
+    CPLFree(papoLayers);
+
+    for (int i = 0; i < nModules; i++)
+        delete papoModules[i];
+    CPLFree(papoModules);
+
+    // CSLDestroy(papszOptions);
+    //
+    // poSpatialRef->Release();
+    //
+    // if (poWriter != nullptr)
+    // {
+    //     poWriter->Close();
+    //     delete poWriter;
+    // }
+    delete poClassContentExplorer;
+}
 
 int OGRS101DataSource::Open(const char *pszName)
 {
@@ -57,15 +111,16 @@ int OGRS101DataSource::Open(const char *pszName)
     // if (GetOption(S57O_RETURN_DSID) == nullptr ||
     //     CPLTestBool(GetOption(S57O_RETURN_DSID)))
     {
-        OGRFeatureDefn *poDefn = S101GenerateDSIDFeatureDefn();
-        AddLayer(new OGRS101Layer(this, poDefn));
+        // TODO: this layer breaks everything
+        // OGRFeatureDefn *poDefn = S101GenerateDSIDFeatureDefn();
+        // AddLayer(new OGRS101Layer(this, poDefn));
     }
 
     /* -------------------------------------------------------------------- */
     /*      Initialize a layer for each type of geometry.  Eventually       */
     /*      we will do this by object class.                                */
     /* -------------------------------------------------------------------- */
-    if (false) //if (OGRS57Driver::GetS57Registrar() == nullptr)
+    if (OGRS101Driver::GetS101Registrar() == nullptr)
     {
         OGRFeatureDefn *poDefn =
             S101GenerateGeomFeatureDefn(wkbPoint, poModule->GetOptionFlags());
@@ -82,10 +137,6 @@ int OGRS101DataSource::Open(const char *pszName)
         poDefn =
             S101GenerateGeomFeatureDefn(wkbNone, poModule->GetOptionFlags());
         AddLayer(new OGRS101Layer(this, poDefn));
-
-
-        poDefn = S101GenerateObjectClassDefn(0, poModule->GetOptionFlags());
-        AddLayer(new OGRS101Layer(this, poDefn));
     }
 
     /* -------------------------------------------------------------------- */
@@ -94,15 +145,13 @@ int OGRS101DataSource::Open(const char *pszName)
     /* -------------------------------------------------------------------- */
     else
     {
-        auto blah = OGRS101Driver::GetS101Registrar();
+        poClassContentExplorer =
+            new S101ClassContentExplorer(OGRS101Driver::GetS101Registrar());
 
-        // poClassContentExplorer =
-        //     new S57ClassContentExplorer(OGRS57Driver::GetS57Registrar());
-        //
-        // for (int iModule = 0; iModule < nModules; iModule++)
-        //     papoModules[iModule]->SetClassBased(OGRS57Driver::GetS57Registrar(),
-        //                                         poClassContentExplorer);
-        //
+        for (int iModule = 0; iModule < nModules; iModule++)
+            papoModules[iModule]->SetClassBased(OGRS101Driver::GetS101Registrar(),
+                                                poClassContentExplorer);
+
         std::vector<int> anClassCount;
         std::unordered_map<int, S101FeatureTypeRow> m_oFTNCToType;
 
@@ -125,20 +174,23 @@ int OGRS101DataSource::Open(const char *pszName)
             {
                 // TODO: we now know what features are in the file, we need to map them to feature names from the FTSC field
 
+                // TODO: Notes for myself, don't think content explorer is needed, pass in the registrar and then should be able to get name
 
-                // OGRFeatureDefn *poDefn = S57GenerateObjectClassDefn(
-                //     OGRS101Driver::GetS57Registrar(), poClassContentExplorer,
-                //     iClass, poModule->GetOptionFlags());
-                //
-                // if (poDefn != nullptr)
-                //     AddLayer(
-                //         new OGRS101Layer(this, poDefn, anClassCount[iClass]));
-                // else
-                // {
-                //     bGeneric = true;
-                //     CPLDebug("S57", "Unable to find definition for OBJL=%d\n",
-                //              iClass);
-                // }
+                auto blah = m_oFTNCToType[iClass];
+
+                OGRFeatureDefn *poDefn = S101GenerateObjectClassDefn(
+                    OGRS101Driver::GetS101Registrar(), poClassContentExplorer,
+                    blah.osName, poModule->GetOptionFlags());
+
+                if (poDefn != nullptr)
+                    AddLayer(
+                        new OGRS101Layer(this, poDefn));//, anClassCount[iClass]));
+                else
+                {
+                    bGeneric = true;
+                    CPLDebug("S57", "Unable to find definition for OBJL=%d\n",
+                             iClass);
+                }
             }
         }
         //
@@ -171,7 +223,25 @@ int OGRS101DataSource::Open(const char *pszName)
     return true;
 }
 
+/************************************************************************/
+/*                              GetLayer()                              */
+/************************************************************************/
+
+const OGRLayer *OGRS101DataSource::GetLayer(int iLayer) const
+
+{
+    if (iLayer < 0 || iLayer >= nLayers)
+        return nullptr;
+
+    return papoLayers[iLayer];
+}
+
+/************************************************************************/
+/*                              AddLayer()                              */
+/************************************************************************/
+
 void OGRS101DataSource::AddLayer(OGRS101Layer *poNewLayer)
+
 {
     papoLayers = static_cast<OGRS101Layer **>(
         CPLRealloc(papoLayers, sizeof(void *) * ++nLayers));

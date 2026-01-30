@@ -62,44 +62,44 @@ OGRFeatureDefn* S101GenerateDSIDFeatureDefn()
     /*      DSSI fields.                                                    */
     /* -------------------------------------------------------------------- */
 
-    oField.Set("DSSI_DCOX", OFTInteger64, 0, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSSI_DCOY", OFTInteger64, 0, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSSI_DCOZ", OFTInteger64, 0, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSSI_CMFX", OFTInteger, 0, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSSI_CMFY", OFTInteger, 0, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSSI_CMFZ", OFTInteger, 0, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSSI_NOIR", OFTInteger, 0, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSSI_NOPN", OFTInteger, 0, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSSI_NOMN", OFTInteger, 0, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSSI_NOCN", OFTInteger, 0, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSSI_NOXN", OFTInteger, 0, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSSI_NOSN", OFTInteger, 0, 0);
-    poFDefn->AddFieldDefn(&oField);
-
-    oField.Set("DSSI_NOFR", OFTInteger, 0, 0);
-    poFDefn->AddFieldDefn(&oField);
+    // oField.Set("DSSI_DCOX", OFTInteger64, 0, 0);
+    // poFDefn->AddFieldDefn(&oField);
+    //
+    // oField.Set("DSSI_DCOY", OFTInteger64, 0, 0);
+    // poFDefn->AddFieldDefn(&oField);
+    //
+    // oField.Set("DSSI_DCOZ", OFTInteger64, 0, 0);
+    // poFDefn->AddFieldDefn(&oField);
+    //
+    // oField.Set("DSSI_CMFX", OFTInteger, 0, 0);
+    // poFDefn->AddFieldDefn(&oField);
+    //
+    // oField.Set("DSSI_CMFY", OFTInteger, 0, 0);
+    // poFDefn->AddFieldDefn(&oField);
+    //
+    // oField.Set("DSSI_CMFZ", OFTInteger, 0, 0);
+    // poFDefn->AddFieldDefn(&oField);
+    //
+    // oField.Set("DSSI_NOIR", OFTInteger, 0, 0);
+    // poFDefn->AddFieldDefn(&oField);
+    //
+    // oField.Set("DSSI_NOPN", OFTInteger, 0, 0);
+    // poFDefn->AddFieldDefn(&oField);
+    //
+    // oField.Set("DSSI_NOMN", OFTInteger, 0, 0);
+    // poFDefn->AddFieldDefn(&oField);
+    //
+    // oField.Set("DSSI_NOCN", OFTInteger, 0, 0);
+    // poFDefn->AddFieldDefn(&oField);
+    //
+    // oField.Set("DSSI_NOXN", OFTInteger, 0, 0);
+    // poFDefn->AddFieldDefn(&oField);
+    //
+    // oField.Set("DSSI_NOSN", OFTInteger, 0, 0);
+    // poFDefn->AddFieldDefn(&oField);
+    //
+    // oField.Set("DSSI_NOFR", OFTInteger, 0, 0);
+    // poFDefn->AddFieldDefn(&oField);
 
     return poFDefn;
 }
@@ -153,21 +153,20 @@ OGRFeatureDefn *S101GenerateGeomFeatureDefn(OGRwkbGeometryType eGType,
 /************************************************************************/
 
 OGRFeatureDefn *
-S101GenerateObjectClassDefn(//S57ClassRegistrar *poCR,
-                           //S57ClassContentExplorer *poClassContentExplorer,
-                           int nOBJL, int nOptionFlags)
+S101GenerateObjectClassDefn(S101ClassRegistrar *poCR,
+                           S101ClassContentExplorer *poClassContentExplorer,
+                           const char* featureCode, int nOptionFlags)
 
 {
-    // if (!poClassContentExplorer->SelectClass(nOBJL))
-    //     return nullptr;
+    if (!poClassContentExplorer->SelectClass(featureCode))
+        return nullptr;
 
     /* -------------------------------------------------------------------- */
     /*      Create the feature definition based on the object class         */
     /*      acronym.                                                        */
     /* -------------------------------------------------------------------- */
-    // OGRFeatureDefn *poFDefn =
-    //     new OGRFeatureDefn(poClassContentExplorer->GetAcronym());
-    OGRFeatureDefn *poFDefn = new OGRFeatureDefn("Sounding");
+    OGRFeatureDefn *poFDefn =
+        new OGRFeatureDefn(poClassContentExplorer->GetAcronym());
     poFDefn->Reference();
 
     /* -------------------------------------------------------------------- */
@@ -205,12 +204,12 @@ S101GenerateObjectClassDefn(//S57ClassRegistrar *poCR,
     //     poFDefn->SetGeomType(wkbUnknown);
     // }
 
-    poFDefn->SetGeomType(wkbPoint);
+    poFDefn->SetGeomType(wkbNone);
 
     /* -------------------------------------------------------------------- */
     /*      Add the standard attributes.                                    */
     /* -------------------------------------------------------------------- */
-    S101GenerateStandardAttributes(poFDefn, nOptionFlags);
+    //S101GenerateStandardAttributes(poFDefn, nOptionFlags);
 
     /* -------------------------------------------------------------------- */
     /*      Add the attributes specific to this object class.               */

@@ -20,6 +20,18 @@ S101Reader::~S101Reader()
 }
 
 /************************************************************************/
+/*                           SetClassBased()                            */
+/************************************************************************/
+
+void S101Reader::SetClassBased(S101ClassRegistrar *poReg,
+                              S101ClassContentExplorer *poClassContentExplorerIn)
+
+{
+    poRegistrar = poReg;
+    poClassContentExplorer = poClassContentExplorerIn;
+}
+
+/************************************************************************/
 /*                                Open()                                */
 /************************************************************************/
 
@@ -299,32 +311,32 @@ OGRFeature *S101Reader::ReadDSID()
         /*      Apply DSSI values. */
         /* --------------------------------------------------------------------
          */
-        poFeature->SetField("DSSI_DCOX",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "DCOX", 0));
-        poFeature->SetField("DSSI_DCOY",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "DCOY", 0));
-        poFeature->SetField("DSSI_DCOZ",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "DCOZ", 0));
-        poFeature->SetField("DSSI_CMFX",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "CMFX", 0));
-        poFeature->SetField("DSSI_CMFY",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "CMFY", 0));
-        poFeature->SetField("DSSI_CMFZ",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "CMFZ", 0));
-        poFeature->SetField("DSSI_NOIR",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOIR", 0));
-        poFeature->SetField("DSSI_NOPN",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOPN", 0));
-        poFeature->SetField("DSSI_NOMN",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOMN", 0));
-        poFeature->SetField("DSSI_NOCN",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOCN", 0));
-        poFeature->SetField("DSSI_NOXN",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOXN", 0));
-        poFeature->SetField("DSSI_NOSN",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOSN", 0));
-        poFeature->SetField("DSSI_NOFR",
-                            poDSIDRecord->GetIntSubfield("DSSI", 0, "NOFR", 0));
+        // poFeature->SetField("DSSI_DCOX",
+        //                     poDSIDRecord->GetIntSubfield("DSSI", 0, "DCOX", 0));
+        // poFeature->SetField("DSSI_DCOY",
+        //                     poDSIDRecord->GetIntSubfield("DSSI", 0, "DCOY", 0));
+        // poFeature->SetField("DSSI_DCOZ",
+        //                     poDSIDRecord->GetIntSubfield("DSSI", 0, "DCOZ", 0));
+        // poFeature->SetField("DSSI_CMFX",
+        //                     poDSIDRecord->GetIntSubfield("DSSI", 0, "CMFX", 0));
+        // poFeature->SetField("DSSI_CMFY",
+        //                     poDSIDRecord->GetIntSubfield("DSSI", 0, "CMFY", 0));
+        // poFeature->SetField("DSSI_CMFZ",
+        //                     poDSIDRecord->GetIntSubfield("DSSI", 0, "CMFZ", 0));
+        // poFeature->SetField("DSSI_NOIR",
+        //                     poDSIDRecord->GetIntSubfield("DSSI", 0, "NOIR", 0));
+        // poFeature->SetField("DSSI_NOPN",
+        //                     poDSIDRecord->GetIntSubfield("DSSI", 0, "NOPN", 0));
+        // poFeature->SetField("DSSI_NOMN",
+        //                     poDSIDRecord->GetIntSubfield("DSSI", 0, "NOMN", 0));
+        // poFeature->SetField("DSSI_NOCN",
+        //                     poDSIDRecord->GetIntSubfield("DSSI", 0, "NOCN", 0));
+        // poFeature->SetField("DSSI_NOXN",
+        //                     poDSIDRecord->GetIntSubfield("DSSI", 0, "NOXN", 0));
+        // poFeature->SetField("DSSI_NOSN",
+        //                     poDSIDRecord->GetIntSubfield("DSSI", 0, "NOSN", 0));
+        // poFeature->SetField("DSSI_NOFR",
+        //                     poDSIDRecord->GetIntSubfield("DSSI", 0, "NOFR", 0));
     }
 
     poFeature->SetFID(nNextDSIDIndex++);
@@ -404,27 +416,25 @@ bool S101Reader::BuildFeatureTypeMap(std::unordered_map<int, S101FeatureTypeRow>
 
         int pszFTNC = poDSIDRecord->GetIntSubfield("FTCS", 0, "FTNC", i); // numeric code
 
-        const char* pszFTNM = poDSIDRecord->GetStringSubfield("FTCS", 0, "FTCD", i);
+        const char* pszFTNS = poDSIDRecord->GetStringSubfield("FTCS", 0, "FTCD", i);
 
         if( pszFTNC == 0 )
             continue;
 
-        // row.nFTNC = atoi(pszFTNC);
-        //
-        // if( const char* psz = poFTCS->GetSubfieldData("FTNM", i) ) // example: name
-        //     row.osName = psz;
-        //
-        // // Handle duplicates deterministically (latest wins, or first wins, or warn)
-        // auto [it, inserted] = m_oFTNCToType.emplace(row.nFTNC, row);
-        // if( !inserted )
-        // {
-        //     // Choose a policy:
-        //     //  - overwrite
-        //     it->second = std::move(row);
-        //
-        //     //  - or keep-first and ignore others
-        //     //  - or CPLDebug/CPLWarning about duplicate FTNC
-        // }
+        row.nFTNC = pszFTNC;
+        row.osName = pszFTNS;
+
+        // Handle duplicates deterministically (latest wins, or first wins, or warn)
+        auto [it, inserted] = m_oFTNCToType.emplace(row.nFTNC, row);
+        if( !inserted )
+        {
+            // Choose a policy:
+            //  - overwrite
+            it->second = std::move(row);
+
+            //  - or keep-first and ignore others
+            //  - or CPLDebug/CPLWarning about duplicate FTNC
+        }
     }
     return true;
 }

@@ -16,6 +16,7 @@ const char *S101ClassRegistrar::ReadLine(VSILFILE *fp)
 }
 
 S101ClassRegistrar::S101ClassRegistrar()
+    : nClasses(0), nAttrCount(0), papszNextLine(nullptr)
 {
 }
 
@@ -103,16 +104,11 @@ bool S101ClassRegistrar::LoadInfo(const char *pszFeatureCatalogueXML)
     m_bLoaded = true;
     m_osLoadedPath = pszFeatureCatalogueXML;
 
+    nClasses = m_oFeatureByCode.size();
     CPLDebug("S101", "Loaded %zu feature types from %s",
              m_oFeatureByCode.size(), pszFeatureCatalogueXML);
 
     return true;
-}
-
-
-
-const S57AttrInfo *S101ClassRegistrar::GetAttrInfo(int i)
-{
 }
 
 int S101ClassRegistrar::FindAttrByAcronym(const char *)
@@ -221,6 +217,8 @@ S101AttributeBinding S101ClassRegistrar::ParseAttributeBinding(const CPLXMLNode 
         out.visibility = TextOf(vis);
 
     return out;
+
+    // TODO: need to add more depth to attribute parsing so it can read in the type etc. from S100_FC_SimpleAttribute
 }
 
 void S101ClassRegistrar::ParseFeatureTypeNode(const CPLXMLNode *ftNode,
@@ -260,7 +258,7 @@ void S101ClassRegistrar::ParseFeatureTypeNode(const CPLXMLNode *ftNode,
             ft.permittedPrimitives.push_back(prim);
     }
 
-    // If you later care about informationBinding / featureBinding:
+    // TODO:  If you later care about informationBinding / featureBinding:
     // parse those here in the same style.
 }
 
@@ -279,3 +277,162 @@ const CPLXMLNode* S101ClassRegistrar::FindFirstByLocalDFS(const CPLXMLNode *root
         return FindFirstByLocalDFS(root->psNext, target);
     }
 }
+
+/************************************************************************/
+/*                        S57ClassContentExplorer()                     */
+/************************************************************************/
+
+S101ClassContentExplorer::S101ClassContentExplorer(
+    S101ClassRegistrar *poRegistrarIn)
+    : poRegistrar(poRegistrarIn), papapszClassesFields(nullptr),
+        papszCurrentFields(nullptr), papszTempResult(nullptr)
+{
+}
+
+/************************************************************************/
+/*                        ~S57ClassContentExplorer()                    */
+/************************************************************************/
+
+S101ClassContentExplorer::~S101ClassContentExplorer()
+{
+    CSLDestroy(papszTempResult);
+
+    if (papapszClassesFields != nullptr)
+    {
+        for (int i = 0; i < poRegistrar->nClasses; i++)
+            CSLDestroy(papapszClassesFields[i]);
+        CPLFree(papapszClassesFields);
+    }
+}
+
+/************************************************************************/
+/*                            SelectClass()                             */
+/************************************************************************/
+
+bool S101ClassContentExplorer::SelectClass(const char *pszFeatureCode)
+
+{
+    auto it = poRegistrar->m_oFeatureByCode.find(pszFeatureCode);
+    if (it != poRegistrar->m_oFeatureByCode.end())
+    {
+        S101FeatureTypeDefn def = it->second;
+        pCurrentFeatureDef = def;
+        return true;
+    }
+
+    return false;
+}
+
+/************************************************************************/
+/*                              GetOBJL()                               */
+/************************************************************************/
+
+int S101ClassContentExplorer::GetOBJL()
+
+{
+    // if (iCurrentClass >= 0)
+    //     return atoi(poRegistrar->apszClassesInfo[iCurrentClass]);
+
+    return -1;
+}
+
+/************************************************************************/
+/*                           GetDescription()                           */
+/************************************************************************/
+
+const char *S101ClassContentExplorer::GetDescription() const
+
+{
+    // if (iCurrentClass >= 0 && papszCurrentFields[0] != nullptr)
+    //     return papszCurrentFields[1];
+
+    return nullptr;
+}
+
+/************************************************************************/
+/*                             GetAcronym()                             */
+/************************************************************************/
+
+const char *S101ClassContentExplorer::GetAcronym() const
+
+{
+    return pCurrentFeatureDef.alias.c_str();
+    // if (iCurrentClass >= 0 && papszCurrentFields[0] != nullptr &&
+    //     papszCurrentFields[1] != nullptr)
+    //     return papszCurrentFields[2];
+
+    return nullptr;
+}
+
+/************************************************************************/
+/*                          GetAttributeList()                          */
+/*                                                                      */
+/*      The passed string can be "a", "b", "c" or NULL for all.  The    */
+/*      returned list remained owned by this object, not the caller.    */
+/************************************************************************/
+
+char **S101ClassContentExplorer::GetAttributeList(const char *pszType)
+
+{
+    // if (iCurrentClass < 0)
+    //     return nullptr;
+
+    CSLDestroy(papszTempResult);
+    papszTempResult = nullptr;
+
+    for (int iColumn = 3; iColumn < 6; iColumn++)
+    {
+        if (pszType != nullptr && iColumn == 3 && !EQUAL(pszType, "a"))
+            continue;
+
+        if (pszType != nullptr && iColumn == 4 && !EQUAL(pszType, "b"))
+            continue;
+
+        if (pszType != nullptr && iColumn == 5 && !EQUAL(pszType, "c"))
+            continue;
+
+        char **papszTokens = CSLTokenizeStringComplex(
+            papszCurrentFields[iColumn], ";", TRUE, FALSE);
+
+        papszTempResult = CSLInsertStrings(papszTempResult, -1, papszTokens);
+
+        CSLDestroy(papszTokens);
+    }
+
+    return papszTempResult;
+}
+
+/************************************************************************/
+/*                            GetClassCode()                            */
+/************************************************************************/
+
+char S101ClassContentExplorer::GetClassCode() const
+
+{
+    // if (iCurrentClass >= 0 && papszCurrentFields[0] != nullptr &&
+    //     papszCurrentFields[1] != nullptr && papszCurrentFields[2] != nullptr &&
+    //     papszCurrentFields[3] != nullptr && papszCurrentFields[4] != nullptr &&
+    //     papszCurrentFields[5] != nullptr && papszCurrentFields[6] != nullptr)
+    //     return papszCurrentFields[6][0];
+
+    return '\0';
+}
+
+/************************************************************************/
+/*                           GetPrimitives()                            */
+/************************************************************************/
+
+char **S101ClassContentExplorer::GetPrimitives()
+
+{
+    // if (iCurrentClass >= 0 && CSLCount(papszCurrentFields) > 7)
+    // {
+    //     CSLDestroy(papszTempResult);
+    //     papszTempResult =
+    //         CSLTokenizeStringComplex(papszCurrentFields[7], ";", TRUE, FALSE);
+    //     return papszTempResult;
+    // }
+
+    return nullptr;
+}
+

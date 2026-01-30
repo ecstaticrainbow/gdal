@@ -13,6 +13,9 @@
 
 #include <unordered_map>
 
+class S101ClassRegistrar;
+class S101ClassContentExplorer;
+
 /************************************************************************/
 /*                              S57Reader                               */
 /************************************************************************/
@@ -20,12 +23,14 @@
 struct S101FeatureTypeRow
 {
     int nFTNC = -1;
-    std::string osName;
+    CPLString osName;
 };
 
 
 class CPL_DLL S101Reader
 {
+    S101ClassRegistrar *poRegistrar;
+    S101ClassContentExplorer *poClassContentExplorer;
 
     char *pszModuleName;
     char *pszDSNM;
@@ -59,6 +64,8 @@ class CPL_DLL S101Reader
   public:
     explicit S101Reader(const char *);
     ~S101Reader();
+
+    void SetClassBased(S101ClassRegistrar *, S101ClassContentExplorer *);
 
     int GetOptionFlags()
     {

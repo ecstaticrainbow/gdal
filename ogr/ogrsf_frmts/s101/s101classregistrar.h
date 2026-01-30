@@ -4,6 +4,7 @@
 
 #ifndef GDAL_S101CLASSREGISTRAR_H
 #define GDAL_S101CLASSREGISTRAR_H
+#include <unordered_map>
 
 struct S101Multiplicity
 {
@@ -56,17 +57,16 @@ class CPL_DLL S101ClassRegistrar
 
     // Class information:
     int nClasses;
-    CPLStringList apszClassesInfo;
+    std::unordered_map<std::string, S101FeatureTypeDefn> m_oFeatureByCode;
+    CPLStringList apszClassesInfo; // TODO: dont think this is needed
 
     // Attribute Information:
     int nAttrCount;
-    std::vector<S57AttrInfo *> aoAttrInfos;
+    std::vector<S101AttrInfo *> aoAttrInfos;
     std::vector<int> anAttrIndex;  // sorted by acronym.
 
     bool m_bLoaded = false;
     std::string m_osLoadedPath;
-    std::unordered_map<std::string, S101FeatureTypeDefn> m_oFeatureByCode;
-
 
     static bool FindFile(const char *pszTarget, const char *pszDirectory,
                          bool bReportErr, VSILFILE **fp);
@@ -82,7 +82,7 @@ public:
 
     // attribute table methods.
     // int         GetMaxAttrIndex() { return nAttrMax; }
-    const S57AttrInfo *GetAttrInfo(int i);
+    const S101AttrInfo *GetAttrInfo(int i);
 
     const char *GetAttrName(int i)
     {
@@ -126,6 +126,48 @@ public:
     void ParseFeatureTypeNode(const CPLXMLNode* ftNode, S101FeatureTypeDefn& ft);
     // Finds the first node anywhere in the tree with local-name == target.
     const CPLXMLNode* FindFirstByLocalDFS(const CPLXMLNode* root, const char* target);
+};
+
+/************************************************************************/
+/*                       S101ClassContentExplorer                        */
+/************************************************************************/
+
+class S101ClassContentExplorer
+{
+    S101ClassRegistrar *poRegistrar;
+
+    char ***papapszClassesFields;
+
+    S101FeatureTypeDefn pCurrentFeatureDef;
+
+    char **papszCurrentFields;
+
+    char **papszTempResult;
+
+public:
+    explicit S101ClassContentExplorer(S101ClassRegistrar *poRegistrar);
+    ~S101ClassContentExplorer();
+
+    bool SelectClass(const char *);
+
+    // bool Rewind()
+    // {
+    //     return SelectClassByIndex(0);
+    // }
+    //
+    // bool NextClass()
+    // {
+    //     return SelectClassByIndex(iCurrentClass + 1);
+    // }
+
+    int GetOBJL();
+    const char *GetDescription() const;
+    const char *GetAcronym() const;
+
+    char **GetAttributeList(const char * = nullptr);
+
+    char GetClassCode() const;
+    char **GetPrimitives();
 };
 
 #endif  //GDAL_S101CLASSREGISTRAR_H
