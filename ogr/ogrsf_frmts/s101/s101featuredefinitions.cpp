@@ -209,54 +209,25 @@ S101GenerateObjectClassDefn(S101ClassRegistrar *poCR,
     /*      Add the attributes specific to this object class.               */
     /* -------------------------------------------------------------------- */
 
-    // char **papszAttrList = poClassContentExplorer->GetAttributeList();
-    //
-    // for (int iAttr = 0;
-    //      papszAttrList != nullptr && papszAttrList[iAttr] != nullptr; iAttr++)
-    // {
-    //     const int iAttrIndex = poCR->FindAttrByAcronym(papszAttrList[iAttr]);
-    //
-    //     if (iAttrIndex == -1)
-    //     {
-    //         CPLDebug("S57", "Can't find attribute %s from class %s:%s.",
-    //                  papszAttrList[iAttr], poClassContentExplorer->GetAcronym(),
-    //                  poClassContentExplorer->GetDescription());
-    //         continue;
-    //     }
-    //
-    //     OGRFieldDefn oField(papszAttrList[iAttr], OFTInteger);
-    //
-    //     switch (poCR->GetAttrType(iAttrIndex))
-    //     {
-    //         case SAT_ENUM:
-    //         case SAT_INT:
-    //             oField.SetType(OFTInteger);
-    //             break;
-    //
-    //         case SAT_FLOAT:
-    //             oField.SetType(OFTReal);
-    //             break;
-    //
-    //         case SAT_CODE_STRING:
-    //         case SAT_FREE_TEXT:
-    //             oField.SetType(OFTString);
-    //             break;
-    //
-    //         case SAT_LIST:
-    //             if ((nOptionFlags & S57M_LIST_AS_STRING))
-    //             {
-    //                 // Legacy behavior
-    //                 oField.SetType(OFTString);
-    //             }
-    //             else
-    //             {
-    //                 oField.SetType(OFTStringList);
-    //             }
-    //             break;
-    //     }
-    //
-    //     poFDefn->AddFieldDefn(&oField);
-    // }
+    std::vector<S101AttributeBinding> papszAttrList = poClassContentExplorer->GetAttributeList();
+
+    for (auto &att : papszAttrList)
+    {
+        OGRFieldDefn oField(att.attrRef.c_str(), OFTInteger);
+
+        if (att.simpleDef)
+        {
+            if( att.simpleDef->valueType == "integer" )      oField.SetType(OFTInteger);
+            if( att.simpleDef->valueType == "real" )         oField.SetType(OFTReal);
+            if( att.simpleDef->valueType == "boolean" )      oField.SetType(OFTInteger);
+            if( att.simpleDef->valueType == "text" )         oField.SetType(OFTString);
+            if( att.simpleDef->valueType == "date" )         oField.SetType(OFTDate);
+            if( att.simpleDef->valueType == "enumeration" )  oField.SetType(OFTInteger);
+        }
+
+        poFDefn->AddFieldDefn(&oField);
+    }
+
     //
     // /* -------------------------------------------------------------------- */
     // /*      Do we need to add DEPTH attributes to soundings?                */

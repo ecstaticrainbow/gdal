@@ -191,7 +191,7 @@ public:
     const char *GetDescription() const;
     const char *GetAcronym() const;
 
-    char **GetAttributeList(const char * = nullptr);
+    std::vector<S101AttributeBinding> GetAttributeList();
 
     char GetClassCode() const;
     std::vector<std::string> GetPrimitives() const;

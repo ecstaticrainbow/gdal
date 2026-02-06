@@ -444,7 +444,7 @@ const char *S101ClassContentExplorer::GetDescription() const
 const char *S101ClassContentExplorer::GetAcronym() const
 
 {
-    return pCurrentFeatureDef.alias.c_str();
+    return pCurrentFeatureDef.code.c_str();
     // if (iCurrentClass >= 0 && papszCurrentFields[0] != nullptr &&
     //     papszCurrentFields[1] != nullptr)
     //     return papszCurrentFields[2];
@@ -459,35 +459,10 @@ const char *S101ClassContentExplorer::GetAcronym() const
 /*      returned list remained owned by this object, not the caller.    */
 /************************************************************************/
 
-char **S101ClassContentExplorer::GetAttributeList(const char *pszType)
+std::vector<S101AttributeBinding> S101ClassContentExplorer::GetAttributeList()
 
 {
-    // if (iCurrentClass < 0)
-    //     return nullptr;
-
-    CSLDestroy(papszTempResult);
-    papszTempResult = nullptr;
-
-    for (int iColumn = 3; iColumn < 6; iColumn++)
-    {
-        if (pszType != nullptr && iColumn == 3 && !EQUAL(pszType, "a"))
-            continue;
-
-        if (pszType != nullptr && iColumn == 4 && !EQUAL(pszType, "b"))
-            continue;
-
-        if (pszType != nullptr && iColumn == 5 && !EQUAL(pszType, "c"))
-            continue;
-
-        char **papszTokens = CSLTokenizeStringComplex(
-            papszCurrentFields[iColumn], ";", TRUE, FALSE);
-
-        papszTempResult = CSLInsertStrings(papszTempResult, -1, papszTokens);
-
-        CSLDestroy(papszTokens);
-    }
-
-    return papszTempResult;
+    return pCurrentFeatureDef.attributes;
 }
 
 /************************************************************************/
