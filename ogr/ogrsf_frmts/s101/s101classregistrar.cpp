@@ -85,6 +85,18 @@ bool S101ClassRegistrar::LoadInfo(const char *pszFeatureCatalogueXML)
                 m_oFeatureByCode[ft.code] = std::move(ft);
             }
         }
+        else if( n->eType == CXT_Element && LocalName(n->pszValue) == "S100_FC_SimpleAttribute" )
+        {
+            S101SimpleAttributeDefn ad = ParseSimpleAttributeNode(n);
+            if( !ad.code.empty() )
+                m_oSimpleAttrsByCode[ad.code] = std::move(ad);
+        }
+        else if( n->eType == CXT_Element && LocalName(n->pszValue) == "S100_FC_ComplexAttribute" )
+        {
+            S101ComplexAttributeDefn ca = ParseComplexAttributeNode(n);
+            if( !ca.code.empty() )
+                m_oComplexAttrsByCode[ca.code] = std::move(ca);
+        }
 
         // DFS: push next then child (order not important)
         if( n->psNext )  stack.push_back(n->psNext);
@@ -216,9 +228,85 @@ S101AttributeBinding S101ClassRegistrar::ParseAttributeBinding(const CPLXMLNode 
     if( const CPLXMLNode* vis = ChildByLocal(ab, "attributeVisibility") )
         out.visibility = TextOf(vis);
 
-    return out;
+    const auto it = m_oSimpleAttrsByCode.find(out.attrRef);
+    if( it != m_oSimpleAttrsByCode.end() )
+    {
+        out.simpleDef = &it->second;
+    }
+    else
+    {
+        auto cit = m_oComplexAttrsByCode.find(out.attrRef);
+        if( cit != m_oComplexAttrsByCode.end() )
+            out.complexDef = &cit->second;
+    }
 
-    // TODO: need to add more depth to attribute parsing so it can read in the type etc. from S100_FC_SimpleAttribute
+    return out;
+}
+
+S101SimpleAttributeDefn S101ClassRegistrar::ParseSimpleAttributeNode(const CPLXMLNode *n)
+{
+    S101SimpleAttributeDefn out;
+
+    if( const CPLXMLNode* c = ChildByLocal(n, "code") )
+        out.code = TextOf(c);
+
+    if( const CPLXMLNode* nm = ChildByLocal(n, "name") )
+        out.name = TextOf(nm);
+
+    if( const CPLXMLNode* d = ChildByLocal(n, "definition") )
+        out.definition = TextOf(d);
+
+    if( const CPLXMLNode* vt = ChildByLocal(n, "valueType") )
+        out.valueType = TextOf(vt);
+
+    if (out.code == "colour")
+    {
+        auto x = 1;
+    }
+
+    // enumeration / listedValues
+    if( const CPLXMLNode* lvs = ChildByLocal(n, "listedValues") )
+    {
+        for( const CPLXMLNode* lv = ChildByLocal(lvs, "listedValue");
+             lv;
+             lv = NextByLocal(lv, "listedValue") )
+        {
+            if( const CPLXMLNode* c = ChildByLocal(lv, "code") )
+            {
+                const std::string code = TextOf(c);
+                if( !code.empty() )
+                    out.enumeration.push_back(code);
+            }
+        }
+    }
+
+    return out;
+}
+
+S101ComplexAttributeDefn S101ClassRegistrar::ParseComplexAttributeNode(const CPLXMLNode *n)
+{
+    S101ComplexAttributeDefn out;
+
+    if( const CPLXMLNode* c = ChildByLocal(n, "code") )
+        out.code = TextOf(c);
+
+    if( const CPLXMLNode* nm = ChildByLocal(n, "name") )
+        out.name = TextOf(nm);
+
+    if( const CPLXMLNode* d = ChildByLocal(n, "definition") )
+        out.definition = TextOf(d);
+
+    // attributeBinding* (sub-attributes)
+    for( const CPLXMLNode* ab = ChildByLocal(n, "subAttributeBinding");
+         ab;
+         ab = NextByLocal(ab, "subAttributeBinding") )
+    {
+        S101AttributeBinding b = ParseAttributeBinding(ab);
+        if( !b.attrRef.empty() )
+            out.subAttributes.push_back(std::move(b));
+    }
+
+    return out;
 }
 
 void S101ClassRegistrar::ParseFeatureTypeNode(const CPLXMLNode *ftNode,
