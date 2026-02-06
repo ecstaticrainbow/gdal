@@ -422,9 +422,10 @@ char S101ClassContentExplorer::GetClassCode() const
 /*                           GetPrimitives()                            */
 /************************************************************************/
 
-char **S101ClassContentExplorer::GetPrimitives()
+std::vector<std::string> S101ClassContentExplorer::GetPrimitives() const
 
 {
+    return pCurrentFeatureDef.permittedPrimitives;
     // if (iCurrentClass >= 0 && CSLCount(papszCurrentFields) > 7)
     // {
     //     CSLDestroy(papszTempResult);
@@ -432,7 +433,5 @@ char **S101ClassContentExplorer::GetPrimitives()
     //         CSLTokenizeStringComplex(papszCurrentFields[7], ";", TRUE, FALSE);
     //     return papszTempResult;
     // }
-
-    return nullptr;
 }
 

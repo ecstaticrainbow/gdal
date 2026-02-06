@@ -167,7 +167,7 @@ public:
     char **GetAttributeList(const char * = nullptr);
 
     char GetClassCode() const;
-    char **GetPrimitives();
+    std::vector<std::string> GetPrimitives() const;
 };
 
 #endif  //GDAL_S101CLASSREGISTRAR_H

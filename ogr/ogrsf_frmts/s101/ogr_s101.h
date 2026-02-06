@@ -55,6 +55,9 @@ public:
     S101ClassContentExplorer *poClassContentExplorer;
 
     OGRS101Layer **papoLayers;
+
+    OGRSpatialReference *poSpatialRef;
+
     int nLayers;
     // TODO
     const char *pszFilename;
@@ -66,6 +69,11 @@ public:
     int GetLayerCount() const override
     {
         return nLayers;
+    }
+
+    const OGRSpatialReference *DSGetSpatialRef() const
+    {
+        return poSpatialRef;
     }
 
     int GetModuleCount()

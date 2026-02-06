@@ -13,6 +13,9 @@ OGRS101Layer::OGRS101Layer(OGRS101DataSource *poDSIn, OGRFeatureDefn *poDefnIn)
     poDS = poDSIn;
     poFeatureDefn = poDefnIn;
     SetDescription(poFeatureDefn->GetName());
+    if (poFeatureDefn->GetGeomFieldCount() > 0)
+        poFeatureDefn->GetGeomFieldDefn(0)->SetSpatialRef(
+            poDS->DSGetSpatialRef());
 }
 
 OGRS101Layer::~OGRS101Layer()

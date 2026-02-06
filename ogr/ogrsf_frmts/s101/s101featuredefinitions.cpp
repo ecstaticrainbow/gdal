@@ -173,38 +173,32 @@ S101GenerateObjectClassDefn(S101ClassRegistrar *poCR,
     /*      Try and establish the geometry type.  If more than one          */
     /*      geometry type is allowed we just fall back to wkbUnknown.       */
     /* -------------------------------------------------------------------- */
-    // char **papszGeomPrim = poClassContentExplorer->GetPrimitives();
-    // if (CSLCount(papszGeomPrim) == 0)
-    // {
-    //     poFDefn->SetGeomType(wkbNone);
-    // }
-    // else if (CSLCount(papszGeomPrim) > 1)
-    // {
-    //     // leave as unknown geometry type.
-    // }
-    // else if (papszGeomPrim[0][0] == 'P')
-    // {
-    //     if (EQUAL(poClassContentExplorer->GetAcronym(), "SOUNDG"))
-    //     {
-    //         if (nOptionFlags & S57M_SPLIT_MULTIPOINT)
-    //             poFDefn->SetGeomType(wkbPoint25D);
-    //         else
-    //             poFDefn->SetGeomType(wkbMultiPoint25D);
-    //     }
-    //     else
-    //         poFDefn->SetGeomType(wkbPoint);
-    // }
-    // else if (papszGeomPrim[0][0] == 'A')
-    // {
-    //     poFDefn->SetGeomType(wkbPolygon);
-    // }
-    // else if (papszGeomPrim[0][0] == 'L')
-    // {
-    //     // unfortunately this could be a multilinestring
-    //     poFDefn->SetGeomType(wkbUnknown);
-    // }
-
-    poFDefn->SetGeomType(wkbNone);
+    std::vector<std::string> papszGeomPrim = poClassContentExplorer->GetPrimitives();
+    if (papszGeomPrim.empty())
+    {
+        poFDefn->SetGeomType(wkbNone);
+    }
+    else if (papszGeomPrim.size() > 1)
+    {
+        // leave as unknown geometry type.
+    }
+    else if (papszGeomPrim[0] == "point")
+    {
+        poFDefn->SetGeomType(wkbPoint);
+    }
+    else if (papszGeomPrim[0] == "pointSet")
+    {
+        poFDefn->SetGeomType(wkbMultiPoint);
+    }
+    else if (papszGeomPrim[0] == "surface")
+    {
+        poFDefn->SetGeomType(wkbPolygon);
+    }
+    else if (papszGeomPrim[0] == "curve")
+    {
+        // unfortunately this could be a multilinestring
+        poFDefn->SetGeomType(wkbUnknown);
+    }
 
     /* -------------------------------------------------------------------- */
     /*      Add the standard attributes.                                    */

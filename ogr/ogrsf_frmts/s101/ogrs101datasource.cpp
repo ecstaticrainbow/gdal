@@ -10,11 +10,11 @@
 /************************************************************************/
 
 OGRS101DataSource::OGRS101DataSource(char **papszOpenOptionsIn)
-    : nLayers(0), papoLayers(nullptr),nModules(0), papoModules(nullptr),
+    : nLayers(0), papoLayers(nullptr), poSpatialRef(new OGRSpatialReference()), nModules(0), papoModules(nullptr),
       poClassContentExplorer(nullptr)
 {
-    // poSpatialRef->SetWellKnownGeogCS("WGS84");
-    // poSpatialRef->SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
+    poSpatialRef->SetWellKnownGeogCS("WGS84");
+    poSpatialRef->SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
 
     /* -------------------------------------------------------------------- */
     /*      Allow initialization of options from the environment.           */
@@ -69,7 +69,7 @@ OGRS101DataSource::~OGRS101DataSource()
 
     // CSLDestroy(papszOptions);
     //
-    // poSpatialRef->Release();
+    poSpatialRef->Release();
     //
     // if (poWriter != nullptr)
     // {
@@ -193,12 +193,12 @@ int OGRS101DataSource::Open(const char *pszName)
                 }
             }
         }
-        //
+
         // if (bGeneric)
         // {
         //     OGRFeatureDefn *poDefn = S57GenerateGeomFeatureDefn(
         //         wkbUnknown, poModule->GetOptionFlags());
-        //     AddLayer(new OGRS57Layer(this, poDefn));
+        //     AddLayer(new OGRS101Layer(this, poDefn));
         // }
     }
 
