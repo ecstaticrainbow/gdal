@@ -172,10 +172,6 @@ int OGRS101DataSource::Open(const char *pszName)
         {
             if (anClassCount[iClass] > 0)
             {
-                // TODO: we now know what features are in the file, we need to map them to feature names from the FTSC field
-
-                // TODO: Notes for myself, don't think content explorer is needed, pass in the registrar and then should be able to get name
-
                 auto blah = m_oFTNCToType[iClass];
 
                 OGRFeatureDefn *poDefn = S101GenerateObjectClassDefn(
@@ -184,7 +180,7 @@ int OGRS101DataSource::Open(const char *pszName)
 
                 if (poDefn != nullptr)
                     AddLayer(
-                        new OGRS101Layer(this, poDefn));//, anClassCount[iClass]));
+                        new OGRS101Layer(this, poDefn, anClassCount[iClass]));
                 else
                 {
                     bGeneric = true;

@@ -25,8 +25,10 @@ class OGRS101Layer : public OGRLayer
     OGRSpatialReference* poSRS = nullptr;
     size_t iNext = 0;
 
+    int nFeatureCount;
+
 public:
-    OGRS101Layer(OGRS101DataSource *poDSIn, OGRFeatureDefn *poDefnIn);
+    OGRS101Layer(OGRS101DataSource *poDSIn, OGRFeatureDefn *poDefnIn,int nFeatureCount = -1);
 
     ~OGRS101Layer() override;
 
@@ -38,6 +40,8 @@ public:
     OGRFeature *GetNextFeature() override;
     OGRFeature *GetNextUnfilteredFeature();
     OGRFeature *GetFeature(GIntBig nFeatureId) override;
+
+    GIntBig GetFeatureCount(int bForce = TRUE) override;
 };
 
 /************************************************************************/

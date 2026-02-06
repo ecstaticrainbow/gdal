@@ -7,8 +7,8 @@
 #include "s101reader.h"
 #include "miramon_common/mm_gdal_functions.h"
 
-OGRS101Layer::OGRS101Layer(OGRS101DataSource *poDSIn, OGRFeatureDefn *poDefnIn)
-    :nCurrentModule(-1)
+OGRS101Layer::OGRS101Layer(OGRS101DataSource *poDSIn, OGRFeatureDefn *poDefnIn, int nFeatureCountIn)
+    :nCurrentModule(-1), nFeatureCount(nFeatureCountIn)
 {
     poDS = poDSIn;
     poFeatureDefn = poDefnIn;
@@ -138,4 +138,16 @@ OGRFeature *OGRS101Layer::GetFeature(GIntBig nFeatureId)
     }
 
     return nullptr;
+}
+
+/************************************************************************/
+/*                          GetFeatureCount()                           */
+/************************************************************************/
+GIntBig OGRS101Layer::GetFeatureCount(int bForce)
+{
+
+    // if (!TestCapability(OLCFastFeatureCount))
+    //     return OGRLayer::GetFeatureCount(bForce);
+
+    return nFeatureCount;
 }
