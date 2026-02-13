@@ -415,13 +415,14 @@ bool S101ClassContentExplorer::SelectClass(const char *pszFeatureCode)
 /*                              GetOBJL()                               */
 /************************************************************************/
 
-int S101ClassContentExplorer::GetOBJL()
+std::string S101ClassContentExplorer::GetCode()
 
 {
+    return pCurrentFeatureDef.code;
     // if (iCurrentClass >= 0)
     //     return atoi(poRegistrar->apszClassesInfo[iCurrentClass]);
-
-    return -1;
+    //
+    // return -1;
 }
 
 /************************************************************************/

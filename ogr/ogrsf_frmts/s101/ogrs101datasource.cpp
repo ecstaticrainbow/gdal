@@ -153,7 +153,6 @@ int OGRS101DataSource::Open(const char *pszName)
                                                 poClassContentExplorer);
 
         std::vector<int> anClassCount;
-        std::unordered_map<int, S101FeatureTypeRow> m_oFTNCToType;
 
         for (int iModule = 0; iModule < nModules; iModule++)
         {
@@ -161,7 +160,7 @@ int OGRS101DataSource::Open(const char *pszName)
                 papoModules[iModule]->CollectClassList(anClassCount));
 
             bSuccess &= CPL_TO_BOOL(
-                papoModules[iModule]->BuildFeatureTypeMap(m_oFTNCToType));
+                papoModules[iModule]->BuildFeatureTypeMap());
         }
 
 
@@ -172,11 +171,12 @@ int OGRS101DataSource::Open(const char *pszName)
         {
             if (anClassCount[iClass] > 0)
             {
-                auto blah = m_oFTNCToType[iClass];
+                // TODO: This is a stop gap, as papoModules is an array. However I think that it is the right thing to do to make the S101Reader own the map between Feature and NFTC
+                auto featureType = papoModules[0]->GetFeatureTypeByNFTC(iClass);
 
                 OGRFeatureDefn *poDefn = S101GenerateObjectClassDefn(
                     OGRS101Driver::GetS101Registrar(), poClassContentExplorer,
-                    blah.osName, poModule->GetOptionFlags());
+                    featureType.osName, poModule->GetOptionFlags());
 
                 if (poDefn != nullptr)
                     AddLayer(

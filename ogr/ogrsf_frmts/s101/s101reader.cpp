@@ -4,14 +4,14 @@
 
 #include "s101reader.h"
 
-
-
 S101Reader::S101Reader(const char *pszFilename)
-    : pszModuleName(CPLStrdup(pszFilename)), pszDSNM(nullptr),
-      poModule(nullptr), nCMFX(10000000), nCMFY(10000000), nCMFZ(10), bFileIngested(false),
-      bMissingWarningIssued(false), bAttrWarningIssued(false), nFDefnCount(0),
-      papoFDefnList(nullptr), nNextDSIDIndex(0), poDSIDRecord(nullptr),
-      poDSSIRecord(nullptr)
+    : poRegistrar(nullptr), poClassContentExplorer(nullptr),
+      pszModuleName(CPLStrdup(pszFilename)), pszDSNM(nullptr),
+      poModule(nullptr), nCMFX(10000000), nCMFY(10000000), nCMFZ(10),
+      bFileIngested(false), bMissingWarningIssued(false),
+      bAttrWarningIssued(false), nFDefnCount(0), papoFDefnList(nullptr),
+      nNextFEIndex(0), nNextDSIDIndex(0), poDSIDRecord(nullptr),
+      poDSSIRecord(nullptr), nOptionFlags(0)
 {
 }
 
@@ -75,7 +75,7 @@ int S101Reader::Open(int bTestOpen)
         poFSPT->SetRepeatingFlag(TRUE);
     }
 
-    // nNextFEIndex = 0;
+    nNextFEIndex = 0;
     // nNextVIIndex = 0;
     // nNextVCIndex = 0;
     // nNextVEIndex = 0;
@@ -352,19 +352,17 @@ void S101Reader::AddFeatureDefn(OGRFeatureDefn *poFDefn)
 
     papoFDefnList[nFDefnCount - 1] = poFDefn;
 
-    // if (poRegistrar != nullptr)
-    // {
-    //     if (poClassContentExplorer->SelectClass(poFDefn->GetName()))
-    //     {
-    //         const int nOBJL = poClassContentExplorer->GetOBJL();
-    //         if (nOBJL >= 0)
-    //         {
-    //             if (nOBJL >= (int)apoFDefnByOBJL.size())
-    //                 apoFDefnByOBJL.resize(nOBJL + 1);
-    //             apoFDefnByOBJL[nOBJL] = poFDefn;
-    //         }
-    //     }
-    // }
+    if (poRegistrar != nullptr)
+    {
+        if (poClassContentExplorer->SelectClass(poFDefn->GetName()))
+        {
+            std::string sCode = poClassContentExplorer->GetCode();
+            if (!sCode.empty())
+            {
+                apoFDefnByCode[sCode] = poFDefn;
+            }
+        }
+    }
 }
 
 /************************************************************************/
@@ -400,7 +398,7 @@ bool S101Reader::CollectClassList(std::vector<int> &anClassCount)
     return bSuccess;
 }
 
-bool S101Reader::BuildFeatureTypeMap(std::unordered_map<int, S101FeatureTypeRow> &m_oFTNCToType)
+bool S101Reader::BuildFeatureTypeMap()
 {
     if( poDSIDRecord == nullptr )
         return false;
@@ -505,29 +503,29 @@ OGRFeature *S101Reader::ReadNextFeature(OGRFeatureDefn *poTarget)
     //             pnCounter = &nNextVFIndex;
     //         }
     //     }
-    //     else
-    //     {
-    //         if (EQUAL(poTarget->GetName(), OGRN_VI))
-    //         {
-    //             nRCNM = RCNM_VI;
-    //             pnCounter = &nNextVIIndex;
-    //         }
-    //         else if (EQUAL(poTarget->GetName(), OGRN_VC))
-    //         {
-    //             nRCNM = RCNM_VC;
-    //             pnCounter = &nNextVCIndex;
-    //         }
-    //         else if (EQUAL(poTarget->GetName(), OGRN_VE))
-    //         {
-    //             nRCNM = RCNM_VE;
-    //             pnCounter = &nNextVEIndex;
-    //         }
-    //         else if (EQUAL(poTarget->GetName(), OGRN_VF))
-    //         {
-    //             nRCNM = RCNM_VF;
-    //             pnCounter = &nNextVFIndex;
-    //         }
-    //     }
+    //else
+    // {
+        // if (EQUAL(poTarget->GetName(), OGRN_VI))
+        // {
+        //     nRCNM = RCNM_VI;
+        //     pnCounter = &nNextVIIndex;
+        // }
+        // else if (EQUAL(poTarget->GetName(), OGRN_VC))
+        // {
+        //     // nRCNM = RCNM_VC;
+        //     // pnCounter = &nNextVCIndex;
+        // }
+        // else if (EQUAL(poTarget->GetName(), OGRN_VE))
+        // {
+        //     // nRCNM = RCNM_VE;
+        //     // pnCounter = &nNextVEIndex;
+        // }
+        // else if (EQUAL(poTarget->GetName(), OGRN_VF))
+        // {
+        //     // nRCNM = RCNM_VF;
+        //     // pnCounter = &nNextVFIndex;
+        // }
+    // }
     //
     //     if (nRCNM != 0)
     //     {
@@ -543,39 +541,39 @@ OGRFeature *S101Reader::ReadNextFeature(OGRFeatureDefn *poTarget)
     /* -------------------------------------------------------------------- */
     /*      Next feature.                                                   */
     /* -------------------------------------------------------------------- */
-    // while (nNextFEIndex < oFE_Index.GetCount())
-    // {
-    //     OGRFeatureDefn *poFeatureDefn = static_cast<OGRFeatureDefn *>(
-    //         oFE_Index.GetClientInfoByIndex(nNextFEIndex));
-    //
-    //     if (poFeatureDefn == nullptr)
-    //     {
-    //         poFeatureDefn = FindFDefn(oFE_Index.GetByIndex(nNextFEIndex));
-    //         oFE_Index.SetClientInfoByIndex(nNextFEIndex, poFeatureDefn);
-    //     }
-    //
-    //     if (poFeatureDefn != poTarget && poTarget != nullptr)
-    //     {
-    //         nNextFEIndex++;
-    //         continue;
-    //     }
-    //
-    //     OGRFeature *poFeature = ReadFeature(nNextFEIndex++, poTarget);
-    //     if (poFeature != nullptr)
-    //     {
-    //         if ((nOptionFlags & S57M_SPLIT_MULTIPOINT) &&
-    //             poFeature->GetGeometryRef() != nullptr &&
-    //             wkbFlatten(poFeature->GetGeometryRef()->getGeometryType()) ==
-    //                 wkbMultiPoint)
-    //         {
-    //             poMultiPoint = poFeature;
-    //             iPointOffset = 0;
-    //             return NextPendingMultiPoint();
-    //         }
-    //
-    //         return poFeature;
-    //     }
-    // }
+    while (nNextFEIndex < oFE_Index.GetCount())
+    {
+        OGRFeatureDefn *poFeatureDefn = static_cast<OGRFeatureDefn *>(
+            oFE_Index.GetClientInfoByIndex(nNextFEIndex));
+
+        if (poFeatureDefn == nullptr)
+        {
+            poFeatureDefn = FindFDefn(oFE_Index.GetByIndex(nNextFEIndex));
+            oFE_Index.SetClientInfoByIndex(nNextFEIndex, poFeatureDefn);
+        }
+
+        if (poFeatureDefn != poTarget && poTarget != nullptr)
+        {
+            nNextFEIndex++;
+            continue;
+        }
+
+        OGRFeature *poFeature = ReadFeature(nNextFEIndex++, poTarget);
+        // if (poFeature != nullptr)
+        // {
+        //     if ((nOptionFlags & S57M_SPLIT_MULTIPOINT) &&
+        //         poFeature->GetGeometryRef() != nullptr &&
+        //         wkbFlatten(poFeature->GetGeometryRef()->getGeometryType()) ==
+        //             wkbMultiPoint)
+        //     {
+        //         poMultiPoint = poFeature;
+        //         iPointOffset = 0;
+        //         return NextPendingMultiPoint();
+        //     }
+        //
+        //     return poFeature;
+        // }
+    }
 
     return nullptr;
 }
@@ -606,4 +604,100 @@ OGRFeature *S101Reader::ReadFeature(int nFeatureId, OGRFeatureDefn *poTarget)
         poFeature->SetFID(nFeatureId);
 
     return poFeature;
+}
+
+/************************************************************************/
+/*                             FindFDefn()                              */
+/*                                                                      */
+/*      Find the OGRFeatureDefn corresponding to the passed feature     */
+/*      record.  It will search based on geometry class, or object      */
+/*      class depending on the bClassBased setting.                     */
+/************************************************************************/
+
+OGRFeatureDefn *S101Reader::FindFDefn(DDFRecord *poRecord)
+
+{
+    if (poRegistrar != nullptr)
+    {
+        const int nNFTC = poRecord->GetIntSubfield("FRID", 0, "NFTC", 0);
+
+        // Map numeric NFTC -> feature code string (what the registrar/explorer uses)
+        const auto featureType = GetFeatureTypeByNFTC(nNFTC);
+
+        if (featureType.osName.empty())
+            return nullptr;
+
+        // Make explorer point at the right class before asking for acronym/code
+        if (!poClassContentExplorer->SelectClass(featureType.osName.c_str()))
+            return nullptr;
+
+        // Make explorer point at the right class before asking for acronym/code
+        if (!poClassContentExplorer->SelectClass(featureType.osName.c_str()))
+            return nullptr;
+
+        const char *pszAcronym = poClassContentExplorer->GetAcronym();
+        if (pszAcronym == nullptr || pszAcronym[0] == '\0')
+            return nullptr;
+
+        // Fast path if you've populated this map in AddFeatureDefn()
+        const auto it = apoFDefnByCode.find(pszAcronym);
+        if (it != apoFDefnByCode.end() && it->second != nullptr)
+            return it->second;
+
+        // Fallback: scan the list
+        for (int i = 0; i < nFDefnCount; i++)
+        {
+            if (EQUAL(papoFDefnList[i]->GetName(), pszAcronym))
+                return papoFDefnList[i];
+        }
+
+        // int nNFTC = poRecord->GetIntSubfield("FRID", 0, "NFTC", 0);
+        //
+        // // if (nNFTC < static_cast<int>(apoFDefnByCode.size()) && apoFDefnByCode[nNFTC] != nullptr)
+        // // {
+        // //     return apoFDefnByCode[nNFTC];
+        // // }
+        //
+        // // if (!poClassContentExplorer->SelectClass(nNFTC))
+        // // {
+        // //     for (int i = 0; i < nFDefnCount; i++)
+        // //     {
+        // //         if (EQUAL(papoFDefnList[i]->GetName(), "Generic"))
+        // //             return papoFDefnList[i];
+        // //     }
+        // //     return nullptr;
+        // // }
+        //
+        // for (int i = 0; i < nFDefnCount; i++)
+        // {
+        //     const char *pszAcronym = poClassContentExplorer->GetAcronym();
+        //     if (pszAcronym != nullptr &&
+        //         EQUAL(papoFDefnList[i]->GetName(), pszAcronym))
+        //         return papoFDefnList[i];
+        // }
+
+        return nullptr;
+    }
+    else
+    {
+        // const int nPRIM = poRecord->GetIntSubfield("FRID", 0, "PRIM", 0);
+        // OGRwkbGeometryType eGType;
+        //
+        // if (nPRIM == PRIM_P)
+        //     eGType = wkbPoint;
+        // else if (nPRIM == PRIM_L)
+        //     eGType = wkbLineString;
+        // else if (nPRIM == PRIM_A)
+        //     eGType = wkbPolygon;
+        // else
+        //     eGType = wkbNone;
+        //
+        // for (int i = 0; i < nFDefnCount; i++)
+        // {
+        //     if (papoFDefnList[i]->GetGeomType() == eGType)
+        //         return papoFDefnList[i];
+        // }
+    }
+
+    return nullptr;
 }

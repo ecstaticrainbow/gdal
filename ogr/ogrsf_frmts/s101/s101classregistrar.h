@@ -5,6 +5,7 @@
 #ifndef GDAL_S101CLASSREGISTRAR_H
 #define GDAL_S101CLASSREGISTRAR_H
 #include <unordered_map>
+#include "cpl_minixml.h"
 
 struct S101AttributeBinding;
 
@@ -187,7 +188,7 @@ public:
     //     return SelectClassByIndex(iCurrentClass + 1);
     // }
 
-    int GetOBJL();
+    std::string GetCode();
     const char *GetDescription() const;
     const char *GetAcronym() const;
 
